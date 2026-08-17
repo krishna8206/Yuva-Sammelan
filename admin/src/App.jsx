@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import QRCode from 'react-qr-code';
 
 function App() {
   const [registrations, setRegistrations] = useState([]);
@@ -71,6 +72,7 @@ function App() {
                   <th className="px-6 py-4">Profession</th>
                   <th className="px-6 py-4">Payment Method</th>
                   <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4 text-center">QR Code</th>
                   <th className="px-6 py-4 text-right">Approval Action</th>
                 </tr>
               </thead>
@@ -139,6 +141,15 @@ function App() {
                             Reg: {reg.registrationStatus}
                           </span>
                         </div>
+                      </td>
+                      <td className="px-6 py-4 text-center align-middle">
+                        {reg.registrationStatus === 'Confirmed' ? (
+                          <div className="flex justify-center bg-white p-1 rounded border border-gray-200 inline-block">
+                            <QRCode value={`https://yuva-sammelan.vercel.app/verify/${reg.id}`} size={64} />
+                          </div>
+                        ) : (
+                          <span className="text-gray-400 text-xs italic">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 text-right">
                         {reg.paymentStatus === 'Pending' ? (
