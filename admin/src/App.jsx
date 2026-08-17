@@ -6,7 +6,7 @@ function App() {
 
   const fetchRegistrations = async () => {
     try {
-      const response = await fetch('http://localhost:5000/registrations');
+      const response = await fetch('https://yuva-sammelan.onrender.com/registrations');
       const data = await response.json();
       setRegistrations(data);
     } catch (error) {
@@ -22,7 +22,7 @@ function App() {
 
   const updatePaymentStatus = async (id, status, extraData = {}) => {
     try {
-      await fetch(`http://localhost:5000/registrations/${id}`, {
+      await fetch(`https://yuva-sammelan.onrender.com/registrations/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

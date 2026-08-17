@@ -7,7 +7,7 @@ function VerifyProfile({ id }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:5000/registrations/${id}`)
+    fetch(`https://yuva-sammelan.onrender.com/registrations/${id}`)
       .then(res => {
         if (!res.ok) throw new Error('Not found');
         return res.json();
@@ -138,7 +138,7 @@ function App() {
     const checkStatus = async () => {
       if (!registrationId) return;
       try {
-        const res = await fetch(`http://localhost:5000/registrations/${registrationId}`);
+        const res = await fetch(`https://yuva-sammelan.onrender.com/registrations/${registrationId}`);
         if (res.ok) {
           const data = await res.json();
           if (data.paymentStatus === 'Approved') {
@@ -171,7 +171,7 @@ function App() {
       timestamp: new Date().toISOString()
     };
     try {
-      await fetch('http://localhost:5000/registrations', {
+      await fetch('https://yuva-sammelan.onrender.com/registrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
