@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-saffron: #FF9933;
+  --color-saffron-hover: #e68a2e;
+  --color-india-green: #138808;
+  --color-india-green-hover: #107507;
+  --color-chakra-blue: #000080;
+}
+
+body {
+  background: #f3f4f6;
+  color: #1f2937;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}

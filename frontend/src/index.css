@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-saffron: #FF9933;
+  --color-saffron-hover: #e68a2e;
+  --color-india-green: #138808;
+  --color-india-green-hover: #107507;
+  --color-chakra-blue: #000080;
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-xl border border-white shadow-2xl rounded-2xl;
+  }
+  
+  .input-field {
+    @apply w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-saffron focus:border-transparent transition-all shadow-sm;
+  }
+}
+
+body {
+  background: linear-gradient(135deg, #fff5eb 0%, #f0fdf4 100%);
+  color: #1f2937;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-up {
+  animation: slideUpFade 0.5s ease-out forwards;
+}
