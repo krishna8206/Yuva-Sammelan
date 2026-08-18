@@ -236,77 +236,86 @@ function App() {
   };
 
   const exportToExcel = () => {
-    if (registrations.length === 0) {
-      alert('No registration data available to export.');
+    const isAttendanceTab = activeTab === 'attendance';
+    const dataToExport = isAttendanceTab 
+      ? registrations.filter(r => r.attendanceStatus)
+      : registrations;
+
+    if (dataToExport.length === 0) {
+      alert(isAttendanceTab ? 'No marked attendance records to export.' : 'No registration records to export.');
       return;
     }
 
-    const formatRow = (reg, index) => ({
-      'S.No': index + 1,
-      'Registration ID': reg.id || '',
-      'Registration Date': reg.timestamp ? new Date(reg.timestamp).toLocaleDateString() : '',
-      'Full Name': reg.fullName || '',
-      'Mobile Number': reg.mobileNumber || '',
-      'Email': reg.email || '',
-      'Date of Birth': reg.dateOfBirth || '',
-      'Age': reg.age || '',
-      'Gender': reg.gender || '',
-      'Blood Group': reg.bloodGroup || '',
-      'Profession': reg.profession || '',
-      'Institution Name': reg.institutionName || '',
-      'Company Name': reg.companyName || '',
-      'Designation': reg.designation || '',
-      'Business Name': reg.businessName || '',
-      'Business Type': reg.businessType || '',
-      'Address': reg.address || '',
-      'Payment Method': reg.paymentMethod || '',
-      'Cash Collected By': reg.cashCollectedBy || '',
-      'Payment Status': reg.paymentStatus || '',
-      'Registration Status': reg.registrationStatus || '',
-      'Attendance': reg.attendanceStatus ? 'Present' : 'Absent',
-      'Email Status': reg.emailStatus || ''
-    });
-
-    const createSheetWithColWidths = (data) => {
-      const worksheet = XLSX.utils.json_to_sheet(data);
-      if (data.length > 0 && !data[0].Message) {
-        const colWidths = Object.keys(data[0]).map(key => {
-          const maxLen = Math.max(
-            key.length,
-            ...data.map(row => (row[key] ? String(row[key]).length : 0))
-          );
-          return { wch: Math.min(Math.max(maxLen + 3, 12), 45) };
-        });
-        worksheet['!cols'] = colWidths;
+    const formatRow = (reg, index) => {
+      if (isAttendanceTab) {
+        return {
+          'S.No': index + 1,
+          'Registration ID': reg.id || '',
+          'Full Name': reg.fullName || '',
+          'Mobile Number': reg.mobileNumber || '',
+          'Email': reg.email || '',
+          'Attendance Status': 'Present (Checked-In)',
+          'Profession': reg.profession || '',
+          'Institution / Company': reg.institutionName || reg.companyName || reg.businessName || '',
+          'Designation': reg.designation || reg.businessType || '',
+          'Blood Group': reg.bloodGroup || '',
+          'Gender': reg.gender || '',
+          'Age': reg.age || '',
+          'Payment Status': reg.paymentStatus || '',
+          'Registration Status': reg.registrationStatus || '',
+          'Registration Date': reg.timestamp ? new Date(reg.timestamp).toLocaleDateString() : ''
+        };
       }
-      return worksheet;
+
+      return {
+        'S.No': index + 1,
+        'Registration ID': reg.id || '',
+        'Registration Date': reg.timestamp ? new Date(reg.timestamp).toLocaleDateString() : '',
+        'Full Name': reg.fullName || '',
+        'Mobile Number': reg.mobileNumber || '',
+        'Email': reg.email || '',
+        'Date of Birth': reg.dateOfBirth || '',
+        'Age': reg.age || '',
+        'Gender': reg.gender || '',
+        'Blood Group': reg.bloodGroup || '',
+        'Profession': reg.profession || '',
+        'Institution Name': reg.institutionName || '',
+        'Company Name': reg.companyName || '',
+        'Designation': reg.designation || '',
+        'Business Name': reg.businessName || '',
+        'Business Type': reg.businessType || '',
+        'Address': reg.address || '',
+        'Payment Method': reg.paymentMethod || '',
+        'Cash Collected By': reg.cashCollectedBy || '',
+        'Payment Status': reg.paymentStatus || '',
+        'Registration Status': reg.registrationStatus || '',
+        'Attendance': reg.attendanceStatus ? 'Present' : 'Absent',
+        'Email Status': reg.emailStatus || ''
+      };
     };
 
+    const formattedData = dataToExport.map(formatRow);
+    const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+    const colWidths = Object.keys(formattedData[0]).map(key => {
+      const maxLen = Math.max(
+        key.length,
+        ...formattedData.map(row => (row[key] ? String(row[key]).length : 0))
+      );
+      return { wch: Math.min(Math.max(maxLen + 3, 12), 45) };
+    });
+    worksheet['!cols'] = colWidths;
+
     const workbook = XLSX.utils.book_new();
-
-    // Sheet 1: All Registrations
-    const allFormatted = registrations.map(formatRow);
-    const regWorksheet = createSheetWithColWidths(allFormatted);
-    XLSX.utils.book_append_sheet(workbook, regWorksheet, 'All Registrations');
-
-    // Sheet 2: Marked Attendance (Present students)
-    const attendedList = registrations.filter(r => r.attendanceStatus);
-    const attendedFormatted = attendedList.map(formatRow);
-    const attWorksheet = createSheetWithColWidths(
-      attendedFormatted.length > 0 ? attendedFormatted : [{ Message: 'No attendees checked in yet' }]
-    );
-    XLSX.utils.book_append_sheet(workbook, attWorksheet, 'Marked Attendance');
-
-    // Sheet 3: Approved Registrations
-    const approvedList = registrations.filter(r => r.paymentStatus === 'Approved');
-    const approvedFormatted = approvedList.map(formatRow);
-    const appWorksheet = createSheetWithColWidths(
-      approvedFormatted.length > 0 ? approvedFormatted : [{ Message: 'No approved registrations yet' }]
-    );
-    XLSX.utils.book_append_sheet(workbook, appWorksheet, 'Approved Registrations');
+    const sheetTitle = isAttendanceTab ? 'Marked Attendance' : 'Registrations';
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetTitle);
 
     const dateStr = new Date().toISOString().slice(0, 10);
-    XLSX.writeFile(workbook, `Yuva_Sammelan_Report_${dateStr}.xlsx`);
+    const fileName = isAttendanceTab 
+      ? `Yuva_Sammelan_Attendance_${dateStr}.xlsx` 
+      : `Yuva_Sammelan_Registrations_${dateStr}.xlsx`;
+
+    XLSX.writeFile(workbook, fileName);
   };
 
   const handleScan = (result) => {
@@ -490,13 +499,13 @@ function App() {
               </div>
               <button 
                 onClick={exportToExcel}
-                title="Download Excel Report with All Registrations & Attendance"
+                title={activeTab === 'attendance' ? "Download Attendance Excel" : "Download Registrations Excel"}
                 className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium shadow-sm transition-colors cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                 </svg>
-                <span>Download Excel</span>
+                <span>Download {activeTab === 'attendance' ? 'Attendance' : 'Registrations'} (Excel)</span>
               </button>
               <button 
                 onClick={() => fetchRegistrations(true)} 
