@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
 
@@ -47,33 +47,25 @@ const registrationSchema = new mongoose.Schema({
 
 const Registration = mongoose.model('Registration', registrationSchema);
 
-// Email Setup (SMTP)
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  family: 4, // Force IPv4 - fixes ENETUNREACH IPv6 error on Render (deploy fix v2)
-});
+// Email Setup (Resend HTTP API - works on all cloud platforms)
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendConfirmationEmail = async (user) => {
   try {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.SMTP_HOST) {
-      throw new Error("SMTP Credentials are missing from Render Environment Variables");
+    if (!process.env.RESEND_API_KEY) {
+      throw new Error('RESEND_API_KEY is missing from environment variables');
     }
 
     const qrPayload = `YS2026:${user.id}`;
     const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 300 });
+    const qrBase64 = qrBuffer.toString('base64');
 
-    const mailOptions = {
-      from: `"Yuva Sammelan 2026" <${process.env.SMTP_USER}>`,
-      to: user.email,
+    const { data, error } = await resend.emails.send({
+      from: 'Yuva Sammelan 2026 <onboarding@resend.dev>',
+      to: [user.email],
       subject: `Registration Confirmed - ${user.id}`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-w: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; padding: 20px;">
           <h2 style="color: #2e7d32; text-align: center;">Registration Approved!</h2>
           <p>Dear <strong>${user.fullName}</strong>,</p>
           <p>Congratulations! Your payment has been successfully verified, and your registration for Yuva Sammelan 2026 is confirmed.</p>
@@ -85,7 +77,7 @@ const sendConfirmationEmail = async (user) => {
           
           <div style="text-align: center; margin-top: 20px;">
             <h3 style="color: #333; margin-bottom: 10px;">Your Entry Pass</h3>
-            <img src="cid:qrcode" alt="Registration QR Code" style="width: 200px; height: 200px; border-radius: 10px; border: 1px solid #ddd;" />
+            <img src="data:image/png;base64,${qrBase64}" alt="Registration QR Code" style="width: 200px; height: 200px; border-radius: 10px; border: 1px solid #ddd;" />
           </div>
 
           <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 25px;">
@@ -99,23 +91,17 @@ const sendConfirmationEmail = async (user) => {
           </div>
         </div>
       `,
-      attachments: [
-        {
-          filename: 'registration-qrcode.png',
-          content: qrBuffer,
-          cid: 'qrcode'
-        }
-      ]
-    };
+    });
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`📧 Email sent to ${user.email} [${info.messageId}]`);
-    
+    if (error) {
+      throw new Error(error.message || JSON.stringify(error));
+    }
+
+    console.log(`📧 Email sent to ${user.email} [${data.id}]`);
     await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
   } catch (error) {
     console.error('Failed to send email:', error);
-    // Store the exact error message so we can see why Render is failing
-    const errorMsg = error.message ? error.message.substring(0, 50) : 'Unknown Error';
+    const errorMsg = error.message ? error.message.substring(0, 80) : 'Unknown Error';
     await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: `Failed: ${errorMsg}` });
   }
 };
