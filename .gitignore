@@ -1,0 +1,13 @@
+# Environment files - NEVER commit these
+.env
+.env.local
+.env.production
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Temp files
+*.bat
+test_email.js
+test_resend.js
