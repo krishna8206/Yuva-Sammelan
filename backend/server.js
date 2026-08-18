@@ -60,6 +60,10 @@ const transporter = nodemailer.createTransport({
 
 const sendConfirmationEmail = async (user) => {
   try {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS || !process.env.SMTP_HOST) {
+      throw new Error("SMTP Credentials are missing from Render Environment Variables");
+    }
+
     const qrPayload = `YS2026:${user.id}`;
     const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 300 });
 
@@ -103,13 +107,15 @@ const sendConfirmationEmail = async (user) => {
       ]
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`📧 Email sent to ${user.email}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`📧 Email sent to ${user.email} [${info.messageId}]`);
     
     await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
   } catch (error) {
     console.error('Failed to send email:', error);
-    await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Failed' });
+    // Store the exact error message so we can see why Render is failing
+    const errorMsg = error.message ? error.message.substring(0, 50) : 'Unknown Error';
+    await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: `Failed: ${errorMsg}` });
   }
 };
 
