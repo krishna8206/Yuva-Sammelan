@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { Scanner } from '@yudiel/react-qr-scanner';
 
+const API_URL = 'http://localhost:5000'; // Using localhost for dev
+
 function App() {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,9 +12,39 @@ function App() {
   const [lastScannedId, setLastScannedId] = useState(null);
   const [activeTab, setActiveTab] = useState('approvals');
 
+  // Authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+
+  // Check for token on mount
+  useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      setIsAuthenticated(true);
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
   const fetchRegistrations = async () => {
+    const token = localStorage.getItem('adminToken');
+    if (!token) return;
+
     try {
-      const response = await fetch('https://yuva-sammelan.onrender.com/registrations');
+      const response = await fetch(`${API_URL}/registrations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem('adminToken');
+        setIsAuthenticated(false);
+        return;
+      }
+
       const data = await response.json();
       setRegistrations(data);
     } catch (error) {
@@ -23,15 +55,19 @@ function App() {
   };
 
   useEffect(() => {
-    fetchRegistrations();
-  }, []);
+    if (isAuthenticated) {
+      fetchRegistrations();
+    }
+  }, [isAuthenticated]);
 
   const updatePaymentStatus = async (id, status, extraData = {}) => {
+    const token = localStorage.getItem('adminToken');
     try {
-      await fetch(`https://yuva-sammelan.onrender.com/registrations/${id}`, {
+      await fetch(`${API_URL}/registrations/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ 
           paymentStatus: status,
@@ -46,11 +82,13 @@ function App() {
   };
 
   const updateAttendance = async (id, status) => {
+    const token = localStorage.getItem('adminToken');
     try {
-      await fetch(`https://yuva-sammelan.onrender.com/registrations/${id}`, {
+      await fetch(`${API_URL}/registrations/${id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({ attendanceStatus: status }),
       });
@@ -85,6 +123,78 @@ function App() {
     }
   };
 
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch(`${API_URL}/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('adminToken', data.token);
+        setIsAuthenticated(true);
+        setLoginError('');
+      } else {
+        setLoginError('Invalid email or password');
+      }
+    } catch (err) {
+      setLoginError('Network error. Backend might not be running.');
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans">
+        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-100">
+          <div className="text-center mb-8">
+            <div className="bg-saffron text-white p-3 rounded-xl shadow-sm inline-block mb-4">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-800">Admin Login</h1>
+            <p className="text-gray-500 mt-2 text-sm">Please enter your credentials to continue</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <input 
+                type="text" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                placeholder="admin@123"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            
+            {loginError && <p className="text-red-500 text-sm text-center font-medium">{loginError}</p>}
+            
+            <button 
+              type="submit" 
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm"
+            >
+              Sign In
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   const displayedRegistrations = activeTab === 'approvals' 
     ? registrations 
     : registrations.filter(r => r.attendanceStatus);
@@ -99,13 +209,26 @@ function App() {
             </div>
             <h1 className="text-xl font-bold text-gray-800">Yuva Sammelan Admin</h1>
           </div>
-          <button 
-            onClick={() => setScannerOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 font-medium text-sm"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-            Scan QR
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => setScannerOpen(true)}
+              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 font-medium text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+              Scan QR
+            </button>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('adminToken');
+                setIsAuthenticated(false);
+                setEmail('');
+                setPassword('');
+              }}
+              className="text-gray-500 hover:text-red-600 font-medium text-sm transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 

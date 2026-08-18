@@ -4,9 +4,11 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'yuva_sammelan_super_secret_2026';
 
 // Middleware
 app.use(cors());
@@ -110,8 +112,30 @@ const sendConfirmationEmail = async (user) => {
 
 // Routes
 
+// Auth Middleware
+const verifyAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(403).json({ error: 'No token provided' });
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+    if (err) return res.status(401).json({ error: 'Unauthorized' });
+    next();
+  });
+};
+
+// Admin Login
+app.post('/admin/login', (req, res) => {
+  const { email, password } = req.body;
+  if (email === 'admin@123' && password === 'admin123') {
+    const token = jwt.sign({ role: 'admin' }, JWT_SECRET, { expiresIn: '12h' });
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: 'Invalid email or password' });
+  }
+});
+
 // Get all registrations (For Admin Panel)
-app.get('/registrations', async (req, res) => {
+app.get('/registrations', verifyAdmin, async (req, res) => {
   try {
     const registrations = await Registration.find().sort({ timestamp: -1 });
     // Transform _id to id if frontend relies on it, or just pass as is
@@ -146,7 +170,7 @@ app.post('/registrations', async (req, res) => {
 });
 
 // Update registration (For Admin Panel approval/rejection)
-app.patch('/registrations/:id', async (req, res) => {
+app.patch('/registrations/:id', verifyAdmin, async (req, res) => {
   try {
     const oldReg = await Registration.findOne({ id: req.params.id });
     if (!oldReg) return res.status(404).json({ error: 'Registration not found' });
