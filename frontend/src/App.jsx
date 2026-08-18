@@ -650,7 +650,7 @@ function App() {
             <div className="flex flex-col flex-1 justify-center space-y-6 max-w-sm mx-auto w-full animate-slide-up">
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-2xl p-6 text-center shadow-sm relative overflow-hidden">
                 <p className="text-gray-500 text-sm font-medium mb-1 uppercase tracking-wider">Registration Amount</p>
-                <p className="text-4xl font-black text-gray-800">₹500</p>
+                <p className="text-4xl font-black text-gray-800">₹20</p>
               </div>
               
               <div className="space-y-4">
@@ -664,7 +664,7 @@ function App() {
                   </div>
                   <div className="flex-1 relative z-10">
                     <h3 className="font-bold text-gray-800 text-lg">Pay Online</h3>
-                    <p className="text-gray-500 text-sm">UPI, Credit Card, Netbanking</p>
+                    <p className="text-gray-500 text-sm">UPI, GPay, PhonePe, Paytm</p>
                   </div>
                   <svg className="w-5 h-5 text-gray-400 group-hover:text-saffron transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
@@ -696,13 +696,26 @@ function App() {
           ) : step === 3 ? (
             <div className="flex flex-col flex-1 justify-center space-y-6 max-w-sm mx-auto w-full items-center animate-slide-up">
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 p-6 rounded-3xl shadow-lg relative overflow-hidden w-full">
-                <p className="text-center text-gray-500 text-sm font-medium mb-4 uppercase tracking-wider">Scan to Pay ₹500</p>
+                <p className="text-center text-gray-700 text-sm font-bold mb-4 uppercase tracking-wider">Scan to Pay ₹20</p>
                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-center items-center w-full mx-auto">
-                  <img src="/qr_code.jpg" alt="Payment QR Code" className="w-56 h-auto max-w-full rounded-xl object-contain mx-auto" />
+                  <QRCode 
+                    value="upi://pay?pa=asarsaharsh92221@oksbi&pn=Harsh%20Asarsa&am=20&cu=INR&tn=Yuva%20Sammelan%20Registration&aid=uGICAgICrgbjJIQ" 
+                    size={210} 
+                    className="w-48 h-48 sm:w-52 sm:h-52 mx-auto" 
+                  />
                 </div>
-                <p className="text-sm text-gray-600 text-center mt-5">
-                  Open any UPI app (GPay, PhonePe, Paytm) and scan the code.
+                <p className="text-xs text-gray-600 text-center mt-3 font-medium">
+                  Scan using GPay, PhonePe, Paytm, or any UPI app.
                 </p>
+                <div className="mt-3 text-center">
+                  <a
+                    href="upi://pay?pa=asarsaharsh92221@oksbi&pn=Harsh%20Asarsa&am=20&cu=INR&tn=Yuva%20Sammelan%20Registration&aid=uGICAgICrgbjJIQ"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors"
+                  >
+                    <span>Tap here to Pay via UPI App</span>
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                  </a>
+                </div>
               </div>
               
               <button
@@ -710,7 +723,7 @@ function App() {
                 className="w-full bg-gradient-to-r from-saffron via-[#ffb066] to-india-green hover:from-saffron-dark hover:to-india-green-light text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
               >
                 <span className="relative z-10 flex items-center justify-center text-lg">
-                  I have paid
+                  I have paid ₹20
                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                 </span>
               </button>
