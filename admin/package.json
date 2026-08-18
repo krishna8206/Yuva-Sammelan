@@ -13,7 +13,8 @@
     "@yudiel/react-qr-scanner": "^2.6.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-qr-code": "^2.2.0"
+    "react-qr-code": "^2.2.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

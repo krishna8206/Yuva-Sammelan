@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { Scanner } from '@yudiel/react-qr-scanner';
+import * as XLSX from 'xlsx';
 // Dynamically point to localhost when testing locally, and Render when live
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5000'
@@ -208,6 +209,80 @@ function App() {
     }
   };
 
+  const exportToExcel = () => {
+    if (registrations.length === 0) {
+      alert('No registration data available to export.');
+      return;
+    }
+
+    const formatRow = (reg, index) => ({
+      'S.No': index + 1,
+      'Registration ID': reg.id || '',
+      'Registration Date': reg.timestamp ? new Date(reg.timestamp).toLocaleDateString() : '',
+      'Full Name': reg.fullName || '',
+      'Mobile Number': reg.mobileNumber || '',
+      'Email': reg.email || '',
+      'Date of Birth': reg.dateOfBirth || '',
+      'Age': reg.age || '',
+      'Gender': reg.gender || '',
+      'Blood Group': reg.bloodGroup || '',
+      'Profession': reg.profession || '',
+      'Institution Name': reg.institutionName || '',
+      'Company Name': reg.companyName || '',
+      'Designation': reg.designation || '',
+      'Business Name': reg.businessName || '',
+      'Business Type': reg.businessType || '',
+      'Address': reg.address || '',
+      'Payment Method': reg.paymentMethod || '',
+      'Cash Collected By': reg.cashCollectedBy || '',
+      'Payment Status': reg.paymentStatus || '',
+      'Registration Status': reg.registrationStatus || '',
+      'Attendance': reg.attendanceStatus ? 'Present' : 'Absent',
+      'Email Status': reg.emailStatus || ''
+    });
+
+    const createSheetWithColWidths = (data) => {
+      const worksheet = XLSX.utils.json_to_sheet(data);
+      if (data.length > 0 && !data[0].Message) {
+        const colWidths = Object.keys(data[0]).map(key => {
+          const maxLen = Math.max(
+            key.length,
+            ...data.map(row => (row[key] ? String(row[key]).length : 0))
+          );
+          return { wch: Math.min(Math.max(maxLen + 3, 12), 45) };
+        });
+        worksheet['!cols'] = colWidths;
+      }
+      return worksheet;
+    };
+
+    const workbook = XLSX.utils.book_new();
+
+    // Sheet 1: All Registrations
+    const allFormatted = registrations.map(formatRow);
+    const regWorksheet = createSheetWithColWidths(allFormatted);
+    XLSX.utils.book_append_sheet(workbook, regWorksheet, 'All Registrations');
+
+    // Sheet 2: Marked Attendance (Present students)
+    const attendedList = registrations.filter(r => r.attendanceStatus);
+    const attendedFormatted = attendedList.map(formatRow);
+    const attWorksheet = createSheetWithColWidths(
+      attendedFormatted.length > 0 ? attendedFormatted : [{ Message: 'No attendees checked in yet' }]
+    );
+    XLSX.utils.book_append_sheet(workbook, attWorksheet, 'Marked Attendance');
+
+    // Sheet 3: Approved Registrations
+    const approvedList = registrations.filter(r => r.paymentStatus === 'Approved');
+    const approvedFormatted = approvedList.map(formatRow);
+    const appWorksheet = createSheetWithColWidths(
+      approvedFormatted.length > 0 ? approvedFormatted : [{ Message: 'No approved registrations yet' }]
+    );
+    XLSX.utils.book_append_sheet(workbook, appWorksheet, 'Approved Registrations');
+
+    const dateStr = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(workbook, `Yuva_Sammelan_Report_${dateStr}.xlsx`);
+  };
+
   const handleScan = (result) => {
     if (!result) return;
     const code = Array.isArray(result) ? result[0].rawValue : result;
@@ -367,7 +442,7 @@ function App() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
             <div className="flex w-full sm:w-auto bg-gray-200/50 p-1 rounded-lg">
               <button 
                 onClick={() => setActiveTab('approvals')}
@@ -382,10 +457,25 @@ function App() {
                 Attendance
               </button>
             </div>
-            <button onClick={fetchRegistrations} className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              Refresh
-            </button>
+            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+              <button 
+                onClick={exportToExcel}
+                title="Download Excel Report with All Registrations & Attendance"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 sm:px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs sm:text-sm font-medium shadow-sm transition-colors cursor-pointer"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                <span>Download Excel</span>
+              </button>
+              <button 
+                onClick={fetchRegistrations} 
+                className="text-xs sm:text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium px-2 py-1.5 rounded hover:bg-blue-50 transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                <span>Refresh</span>
+              </button>
+            </div>
           </div>
           
           <div className="bg-white">
