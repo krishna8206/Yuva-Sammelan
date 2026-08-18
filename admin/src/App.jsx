@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { Scanner } from '@yudiel/react-qr-scanner';
 
-const API_URL = 'http://localhost:5000'; // Using localhost for dev
+const API_URL = 'https://yuva-sammelan.onrender.com'; // Pointing to live backend
 
 function App() {
   const [registrations, setRegistrations] = useState([]);
