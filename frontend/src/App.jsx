@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : 'https://yuva-sammelan.onrender.com';
+
 function VerifyProfile({ id }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`https://yuva-sammelan.onrender.com/registrations/${id}`)
+    fetch(`${API_URL}/registrations/${id}`)
       .then(res => {
         if (!res.ok) throw new Error('Not found');
         return res.json();
@@ -277,7 +281,7 @@ function App() {
     const checkStatus = async () => {
       if (!registrationId) return;
       try {
-        const res = await fetch(`https://yuva-sammelan.onrender.com/registrations/${registrationId}`);
+        const res = await fetch(`${API_URL}/registrations/${registrationId}`);
         if (res.ok) {
           const data = await res.json();
           if (data.paymentStatus === 'Approved') {
@@ -310,7 +314,7 @@ function App() {
       timestamp: new Date().toISOString()
     };
     try {
-      await fetch('https://yuva-sammelan.onrender.com/registrations', {
+      await fetch(`${API_URL}/registrations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -793,7 +797,7 @@ function App() {
                 </p>
                 
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 inline-block">
-                  <QRCode value={`${window.location.origin}/verify/${registrationId}`} size={160} />
+                  <QRCode value={`YS2026:${registrationId}`} size={160} />
                 </div>
                 <p className="font-mono font-bold text-gray-700 tracking-wider text-sm mt-3">{registrationId}</p>
               </div>
@@ -839,22 +843,45 @@ function App() {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col flex-1 justify-center space-y-6 max-w-sm mx-auto w-full items-center animate-slide-up text-center">
-              <div className="w-24 h-24 bg-blue-50 border-4 border-blue-100 rounded-full flex items-center justify-center mb-4">
-                <svg className="w-12 h-12 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <div className="flex flex-col flex-1 justify-center space-y-5 max-w-sm mx-auto w-full items-center animate-slide-up text-center">
+              <div className="w-20 h-20 bg-blue-50 border-4 border-blue-100 rounded-full flex items-center justify-center mb-1">
+                <svg className="w-10 h-10 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </div>
               
-              <h3 className="text-2xl font-bold text-gray-800">Payment Under Verification</h3>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-1">Payment Under Verification</h3>
+                {registrationId && (
+                  <p className="font-mono text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full inline-block border border-blue-200">
+                    ID: {registrationId}
+                  </p>
+                )}
+              </div>
               
-              <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 shadow-sm">
+              <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 shadow-sm">
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Your payment is under verification. Please wait here. This page will automatically update once the admin approves or rejects your registration.
+                  Your registration is submitted and currently under review. This page will automatically update once the admin approves or rejects your payment.
                 </p>
               </div>
               
-              <div className="text-gray-400 text-sm flex items-center justify-center gap-2 mt-2">
-                <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+              <div className="text-gray-500 text-xs flex items-center justify-center gap-2">
+                <svg className="w-4 h-4 animate-spin text-saffron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 Waiting for Admin approval...
+              </div>
+
+              <div className="pt-2 w-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    localStorage.removeItem('registrationId');
+                    localStorage.removeItem('registrationFormData');
+                    setRegistrationId(null);
+                    setStep(1);
+                  }}
+                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-4 rounded-xl text-sm transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+                  <span>Start New Registration / Back to Form</span>
+                </button>
               </div>
             </div>
           )}

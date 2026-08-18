@@ -318,28 +318,64 @@ function App() {
     XLSX.writeFile(workbook, fileName);
   };
 
-  const handleScan = (result) => {
+  const handleScan = async (result) => {
     if (!result) return;
-    const code = Array.isArray(result) ? result[0].rawValue : result;
+    const raw = Array.isArray(result) ? result[0]?.rawValue : (result.rawValue || result);
+    if (!raw) return;
+
+    const code = String(raw).trim();
+    
+    // Extract registration ID from any supported format:
+    // Format 1: "YS2026:REG-12345"
+    // Format 2: "https://.../verify/REG-12345" or "/verify/REG-12345"
+    // Format 3: "REG-12345"
+    let id = null;
     if (code.startsWith('YS2026:')) {
-      const id = code.split(':')[1];
-      if (id === lastScannedId) return; // Prevent multiple scans
-      
-      setLastScannedId(id);
-      
-      const reg = registrations.find(r => r.id === id);
-      if (reg) {
-        setScannedReg(reg);
-        setScannerOpen(false); // Close the scanner modal
-        // Automatically check in if not already checked in
-        if (!reg.attendanceStatus) {
-          updateAttendance(id, true);
-        }
+      id = code.split('YS2026:')[1]?.trim();
+    } else if (code.includes('/verify/')) {
+      id = code.split('/verify/')[1]?.split('?')[0]?.split('/')[0]?.trim();
+    } else {
+      const match = code.match(/REG-[A-Za-z0-9]+/i);
+      if (match) {
+        id = match[0];
       } else {
-        alert('Registration not found for this QR code.');
+        id = code;
+      }
+    }
+
+    if (!id) {
+      alert(`Invalid QR code format. Expected Yuva Sammelan QR.`);
+      return;
+    }
+
+    if (id === lastScannedId) return; // Prevent duplicate rapid scans
+    setLastScannedId(id);
+
+    // Look in existing registrations state
+    let reg = registrations.find(r => r.id.toLowerCase() === id.toLowerCase());
+
+    // If not in state yet, fetch live from backend
+    if (!reg) {
+      try {
+        const res = await fetch(`${API_URL}/registrations/${id}`);
+        if (res.ok) {
+          reg = await res.json();
+        }
+      } catch (err) {
+        console.error('Error fetching scanned registration:', err);
+      }
+    }
+
+    if (reg) {
+      setScannedReg(reg);
+      setScannerOpen(false); // Close scanner modal
+      
+      // Automatically check in / mark attendance if not already marked
+      if (!reg.attendanceStatus) {
+        updateAttendance(reg.id, true);
       }
     } else {
-      alert('Invalid QR code format. Expected Yuva Sammelan QR.');
+      alert(`Registration (${id}) not found in the system.`);
     }
   };
 
