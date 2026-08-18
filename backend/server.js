@@ -70,44 +70,71 @@ const transporter = nodemailer.createTransport({
 
 const sendConfirmationEmail = async (user) => {
   try {
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      throw new Error('SMTP credentials missing from environment variables');
-    }
-
     const qrPayload = `YS2026:${user.id}`;
     const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 200, margin: 1, errorCorrectionLevel: 'M' });
+    const qrBase64 = qrBuffer.toString('base64');
+
+    const emailHtml = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; padding: 20px;">
+        <h2 style="color: #2e7d32; text-align: center;">Registration Approved!</h2>
+        <p>Dear <strong>${user.fullName}</strong>,</p>
+        <p>Congratulations! Your payment has been successfully verified, and your registration for Yuva Sammelan 2026 is confirmed.</p>
+        <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p><strong>Registration ID:</strong> ${user.id}</p>
+          <p><strong>Mobile:</strong> ${user.mobileNumber}</p>
+          <p><strong>Payment Status:</strong> Confirmed</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px;">
+          <h3 style="color: #333; margin-bottom: 10px;">Your Entry Pass</h3>
+          <img src="cid:qrcode" alt="Registration QR Code" style="width: 200px; height: 200px; border-radius: 10px; border: 1px solid #ddd;" />
+        </div>
+
+        <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 25px;">
+          <h4 style="margin-top: 0; color: #1565c0;">Basic QR Usage Instructions:</h4>
+          <ol style="margin-bottom: 0; color: #333; font-size: 14px; padding-left: 20px; line-height: 1.5;">
+            <li>Save this email or take a screenshot of the QR code above.</li>
+            <li>When you arrive at the venue, open the QR code on your phone.</li>
+            <li>Present it to the volunteers at the entrance desk.</li>
+            <li>They will scan it to automatically mark your attendance and grant you entry!</li>
+          </ol>
+        </div>
+      </div>
+    `;
+
+    // 1. FAST HTTPS METHOD (Google Apps Script Web App - 100% Reliable on Render, 1 second delivery)
+    if (process.env.GOOGLE_SCRIPT_URL) {
+      try {
+        const response = await fetch(process.env.GOOGLE_SCRIPT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: user.email,
+            subject: `Registration Confirmed - ${user.id}`,
+            html: emailHtml,
+            qrBase64: qrBase64
+          })
+        });
+        if (response.ok) {
+          console.log(`📧 Email sent via Google Web App to ${user.email}`);
+          await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
+          return;
+        }
+      } catch (err) {
+        console.warn('Google Web App error, trying SMTP fallback:', err.message);
+      }
+    }
+
+    // 2. SMTP FALLBACK
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      throw new Error('Email sending failed: No GOOGLE_SCRIPT_URL or SMTP credentials configured');
+    }
 
     const mailOptions = {
       from: `"Yuva Sammelan 2026" <${process.env.SMTP_USER}>`,
       to: user.email,
       subject: `Registration Confirmed - ${user.id}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; padding: 20px;">
-          <h2 style="color: #2e7d32; text-align: center;">Registration Approved!</h2>
-          <p>Dear <strong>${user.fullName}</strong>,</p>
-          <p>Congratulations! Your payment has been successfully verified, and your registration for Yuva Sammelan 2026 is confirmed.</p>
-          <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p><strong>Registration ID:</strong> ${user.id}</p>
-            <p><strong>Mobile:</strong> ${user.mobileNumber}</p>
-            <p><strong>Payment Status:</strong> Confirmed</p>
-          </div>
-          
-          <div style="text-align: center; margin-top: 20px;">
-            <h3 style="color: #333; margin-bottom: 10px;">Your Entry Pass</h3>
-            <img src="cid:qrcode" alt="Registration QR Code" style="width: 200px; height: 200px; border-radius: 10px; border: 1px solid #ddd;" />
-          </div>
-
-          <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 25px;">
-            <h4 style="margin-top: 0; color: #1565c0;">Basic QR Usage Instructions:</h4>
-            <ol style="margin-bottom: 0; color: #333; font-size: 14px; padding-left: 20px; line-height: 1.5;">
-              <li>Save this email or take a screenshot of the QR code above.</li>
-              <li>When you arrive at the venue, open the QR code on your phone.</li>
-              <li>Present it to the volunteers at the entrance desk.</li>
-              <li>They will scan it to automatically mark your attendance and grant you entry!</li>
-            </ol>
-          </div>
-        </div>
-      `,
+      html: emailHtml,
       attachments: [
         {
           filename: 'registration-qrcode.png',
@@ -118,7 +145,7 @@ const sendConfirmationEmail = async (user) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`📧 Email sent to ${user.email} [${info.messageId}]`);
+    console.log(`📧 Email sent via SMTP to ${user.email} [${info.messageId}]`);
     await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
   } catch (error) {
     console.error('Failed to send email:', error);
