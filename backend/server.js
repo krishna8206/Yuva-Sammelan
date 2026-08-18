@@ -38,6 +38,7 @@ const registrationSchema = new mongoose.Schema({
   cashCollectedBy: String,
   paymentStatus: { type: String, default: 'Pending' },
   registrationStatus: { type: String, default: 'Pending' },
+  attendanceStatus: { type: Boolean, default: false },
   timestamp: { type: Date, default: Date.now }
 });
 
@@ -66,8 +67,8 @@ const sendConfirmationEmail = async (user) => {
   if (!transporter) return;
   
   try {
-    const verifyUrl = `${process.env.FRONTEND_URL || 'https://yuva-sammelan.vercel.app'}/verify/${user.id}`;
-    const qrBuffer = await QRCode.toBuffer(verifyUrl, { type: 'png', width: 300 });
+    const qrPayload = `YS2026:${user.id}`;
+    const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 300 });
 
     const mailOptions = {
       from: '"Yuva Sammelan 2026" <noreply@yuvasammelan.com>',

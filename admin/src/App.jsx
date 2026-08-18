@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
+import { Scanner } from '@yudiel/react-qr-scanner';
 
 function App() {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scannedReg, setScannedReg] = useState(null);
 
   const fetchRegistrations = async () => {
     try {
@@ -40,6 +43,39 @@ function App() {
     }
   };
 
+  const updateAttendance = async (id, status) => {
+    try {
+      await fetch(`https://yuva-sammelan.onrender.com/registrations/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ attendanceStatus: status }),
+      });
+      fetchRegistrations();
+      setScannedReg(null); // Close the scanned result modal
+    } catch (error) {
+      console.error('Error updating attendance:', error);
+    }
+  };
+
+  const handleScan = (result) => {
+    if (!result) return;
+    const code = Array.isArray(result) ? result[0].rawValue : result;
+    if (code.startsWith('YS2026:')) {
+      const id = code.split(':')[1];
+      const reg = registrations.find(r => r.id === id);
+      if (reg) {
+        setScannedReg(reg);
+        setScannerOpen(false);
+      } else {
+        alert('Registration not found for this QR code.');
+      }
+    } else {
+      alert('Invalid QR code format. Expected Yuva Sammelan QR.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
@@ -50,6 +86,13 @@ function App() {
             </div>
             <h1 className="text-xl font-bold text-gray-800">Yuva Sammelan Admin</h1>
           </div>
+          <button 
+            onClick={() => setScannerOpen(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 font-medium text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
+            Scan QR
+          </button>
         </div>
       </header>
 
@@ -71,7 +114,7 @@ function App() {
                   <th className="px-6 py-4">User Details</th>
                   <th className="px-6 py-4">Profession</th>
                   <th className="px-6 py-4">Payment Method</th>
-                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Status & Attendance</th>
                   <th className="px-6 py-4 text-center">QR Code</th>
                   <th className="px-6 py-4 text-right">Approval Action</th>
                 </tr>
@@ -140,12 +183,17 @@ function App() {
                           }`}>
                             Reg: {reg.registrationStatus}
                           </span>
+                          <span className={`inline-flex w-max items-center px-2 py-1 rounded text-xs font-medium ${
+                            reg.attendanceStatus ? 'bg-indigo-100 text-indigo-700' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            Attended: {reg.attendanceStatus ? 'Yes' : 'No'}
+                          </span>
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center align-middle">
                         {reg.registrationStatus === 'Confirmed' ? (
                           <div className="flex justify-center bg-white p-1 rounded border border-gray-200 inline-block">
-                            <QRCode value={`https://yuva-sammelan.vercel.app/verify/${reg.id}`} size={64} />
+                            <QRCode value={`YS2026:${reg.id}`} size={64} />
                           </div>
                         ) : (
                           <span className="text-gray-400 text-xs italic">-</span>
@@ -188,6 +236,45 @@ function App() {
           </div>
         </div>
       </main>
+
+      {/* Scanner Modal */}
+      {scannerOpen && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200">
+              <h3 className="font-semibold text-lg">Scan Student QR</h3>
+              <button onClick={() => setScannerOpen(false)} className="text-gray-500 hover:text-gray-800">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-4 bg-black">
+              <Scanner onScan={handleScan} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scanned Result Modal */}
+      {scannedReg && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden p-6">
+            <h3 className="font-bold text-xl mb-4 text-center">Scan Successful!</h3>
+            <div className="space-y-3 mb-6">
+              <p><strong>Name:</strong> {scannedReg.fullName}</p>
+              <p><strong>ID:</strong> {scannedReg.id}</p>
+              <p><strong>Payment Status:</strong> {scannedReg.paymentStatus}</p>
+              <p><strong>Registration Status:</strong> {scannedReg.registrationStatus}</p>
+              <p><strong>Attendance:</strong> {scannedReg.attendanceStatus ? <span className="text-green-600 font-bold">Already Checked In</span> : <span className="text-yellow-600 font-medium">Not Checked In</span>}</p>
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setScannedReg(null)} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+              {!scannedReg.attendanceStatus && (
+                <button onClick={() => updateAttendance(scannedReg.id, true)} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium">Check In Student</button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
