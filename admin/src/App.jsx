@@ -98,6 +98,31 @@ function App() {
     }
   };
 
+  const resendEmail = async (id) => {
+    const token = localStorage.getItem('adminToken');
+    try {
+      // Optimistically update UI to 'Pending'
+      setRegistrations(prev => prev.map(r => r.id === id ? { ...r, emailStatus: 'Pending' } : r));
+      
+      const response = await fetch(`${API_URL}/registrations/${id}/resend-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to resend');
+      }
+      
+      // Wait a moment then fetch latest status from backend
+      setTimeout(fetchRegistrations, 2000);
+    } catch (error) {
+      console.error('Error resending email:', error);
+      fetchRegistrations(); // Revert on error
+    }
+  };
+
   const handleScan = (result) => {
     if (!result) return;
     const code = Array.isArray(result) ? result[0].rawValue : result;
@@ -360,6 +385,14 @@ function App() {
                           }`}>
                             Attended: {reg.attendanceStatus ? 'Yes' : 'No'}
                           </span>
+                          {reg.paymentStatus === 'Approved' && (
+                            <span className={`inline-flex w-max items-center px-2 py-1 rounded text-xs font-medium ${
+                              reg.emailStatus === 'Sent' ? 'bg-green-100 text-green-700' : 
+                              reg.emailStatus === 'Failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              Email: {reg.emailStatus || 'Pending'}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center align-middle">
@@ -397,7 +430,18 @@ function App() {
                             </button>
                           </div>
                         ) : (
-                          <span className="text-gray-400 text-xs italic">Action taken</span>
+                          <div className="flex justify-end gap-2 items-center">
+                            {reg.paymentStatus === 'Approved' && (
+                              <button
+                                onClick={() => resendEmail(reg.id)}
+                                disabled={reg.emailStatus === 'Pending'}
+                                className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50 transition-colors"
+                              >
+                                {reg.emailStatus === 'Pending' ? 'Sending...' : 'Resend Email'}
+                              </button>
+                            )}
+                            <span className="text-gray-400 text-xs italic">Action taken</span>
+                          </div>
                         )}
                       </td>
                     </tr>

@@ -41,39 +41,30 @@ const registrationSchema = new mongoose.Schema({
   paymentStatus: { type: String, default: 'Pending' },
   registrationStatus: { type: String, default: 'Pending' },
   attendanceStatus: { type: Boolean, default: false },
+  emailStatus: { type: String, default: 'Pending' },
   timestamp: { type: Date, default: Date.now }
 });
 
 const Registration = mongoose.model('Registration', registrationSchema);
 
-// Email Setup (Ethereal for testing, can be swapped to real SMTP)
-let transporter;
-nodemailer.createTestAccount((err, account) => {
-  if (err) {
-    console.error('Failed to create a testing email account. ' + err.message);
-    return;
-  }
-  transporter = nodemailer.createTransport({
-    host: account.smtp.host,
-    port: account.smtp.port,
-    secure: account.smtp.secure,
-    auth: {
-      user: account.user,
-      pass: account.pass
-    }
-  });
-  console.log('✅ Ethereal Email Transporter Ready (Simulated Emails)');
+// Email Setup (SMTP)
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_PORT == 465, // true for 465, false for other ports
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
 });
 
 const sendConfirmationEmail = async (user) => {
-  if (!transporter) return;
-  
   try {
     const qrPayload = `YS2026:${user.id}`;
     const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 300 });
 
     const mailOptions = {
-      from: '"Yuva Sammelan 2026" <noreply@yuvasammelan.com>',
+      from: `"Yuva Sammelan 2026" <${process.env.SMTP_USER}>`,
       to: user.email,
       subject: `Registration Confirmed - ${user.id}`,
       html: `
@@ -84,12 +75,22 @@ const sendConfirmationEmail = async (user) => {
           <div style="background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
             <p><strong>Registration ID:</strong> ${user.id}</p>
             <p><strong>Mobile:</strong> ${user.mobileNumber}</p>
-            <p><strong>Payment Method:</strong> ${user.paymentMethod}</p>
+            <p><strong>Payment Status:</strong> Confirmed</p>
           </div>
-          <p style="text-align: center; color: #555;">Please present the attached QR Code at the venue for quick attendance verification.</p>
           
           <div style="text-align: center; margin-top: 20px;">
+            <h3 style="color: #333; margin-bottom: 10px;">Your Entry Pass</h3>
             <img src="cid:qrcode" alt="Registration QR Code" style="width: 200px; height: 200px; border-radius: 10px; border: 1px solid #ddd;" />
+          </div>
+
+          <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 25px;">
+            <h4 style="margin-top: 0; color: #1565c0;">Basic QR Usage Instructions:</h4>
+            <ol style="margin-bottom: 0; color: #333; font-size: 14px; padding-left: 20px; line-height: 1.5;">
+              <li>Save this email or take a screenshot of the QR code above.</li>
+              <li>When you arrive at the venue, open the QR code on your phone.</li>
+              <li>Present it to the volunteers at the entrance desk.</li>
+              <li>They will scan it to automatically mark your attendance and grant you entry!</li>
+            </ol>
           </div>
         </div>
       `,
@@ -102,11 +103,13 @@ const sendConfirmationEmail = async (user) => {
       ]
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`📧 Simulated Email sent to ${user.email}`);
-    console.log(`🔗 PREVIEW IN BROWSER: ${nodemailer.getTestMessageUrl(info)}`);
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 Email sent to ${user.email}`);
+    
+    await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
   } catch (error) {
     console.error('Failed to send email:', error);
+    await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Failed' });
   }
 };
 
@@ -189,6 +192,28 @@ app.patch('/registrations/:id', verifyAdmin, async (req, res) => {
     res.json(updatedReg);
   } catch (err) {
     res.status(500).json({ error: 'Failed to update registration' });
+  }
+});
+
+// Resend Email manually (For Admin Panel)
+app.post('/registrations/:id/resend-email', verifyAdmin, async (req, res) => {
+  try {
+    const reg = await Registration.findOne({ id: req.params.id });
+    if (!reg) return res.status(404).json({ error: 'Registration not found' });
+    
+    if (reg.paymentStatus !== 'Approved') {
+      return res.status(400).json({ error: 'Cannot send email before payment is approved' });
+    }
+
+    // Set to pending initially so UI can show a loading state if we want, but sendConfirmationEmail will set it to Sent/Failed anyway
+    await Registration.findOneAndUpdate({ id: req.params.id }, { emailStatus: 'Pending' });
+    
+    // We intentionally do not await the email sending so the HTTP request completes quickly
+    sendConfirmationEmail(reg);
+
+    res.json({ success: true, message: 'Email sending initiated' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to resend email' });
   }
 });
 
