@@ -56,6 +56,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  family: 4, // Force IPv4 to fix ENETUNREACH IPv6 errors on Render
 });
 
 const sendConfirmationEmail = async (user) => {
