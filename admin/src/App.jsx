@@ -7,6 +7,8 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scannedReg, setScannedReg] = useState(null);
+  const [lastScannedId, setLastScannedId] = useState(null);
+  const [activeTab, setActiveTab] = useState('approvals');
 
   const fetchRegistrations = async () => {
     try {
@@ -53,7 +55,6 @@ function App() {
         body: JSON.stringify({ attendanceStatus: status }),
       });
       fetchRegistrations();
-      setScannedReg(null); // Close the scanned result modal
     } catch (error) {
       console.error('Error updating attendance:', error);
     }
@@ -64,10 +65,18 @@ function App() {
     const code = Array.isArray(result) ? result[0].rawValue : result;
     if (code.startsWith('YS2026:')) {
       const id = code.split(':')[1];
+      if (id === lastScannedId) return; // Prevent multiple scans
+      
+      setLastScannedId(id);
+      
       const reg = registrations.find(r => r.id === id);
       if (reg) {
         setScannedReg(reg);
-        setScannerOpen(false);
+        setScannerOpen(false); // Close the scanner modal
+        // Automatically check in if not already checked in
+        if (!reg.attendanceStatus) {
+          updateAttendance(id, true);
+        }
       } else {
         alert('Registration not found for this QR code.');
       }
@@ -75,6 +84,10 @@ function App() {
       alert('Invalid QR code format. Expected Yuva Sammelan QR.');
     }
   };
+
+  const displayedRegistrations = activeTab === 'approvals' 
+    ? registrations 
+    : registrations.filter(r => r.attendanceStatus);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
@@ -96,10 +109,23 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-gray-200 bg-gray-50/50 flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-800">Registration Approvals</h2>
+          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex bg-gray-200/50 p-1 rounded-lg">
+              <button 
+                onClick={() => setActiveTab('approvals')}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'approvals' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Registration Approvals
+              </button>
+              <button 
+                onClick={() => setActiveTab('attendance')}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'attendance' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Marked Attendance
+              </button>
+            </div>
             <button onClick={fetchRegistrations} className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
               Refresh
@@ -122,18 +148,18 @@ function App() {
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
                       Loading registrations...
                     </td>
                   </tr>
-                ) : registrations.length === 0 ? (
+                ) : displayedRegistrations.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
-                      No registrations found.
+                    <td colSpan="7" className="px-6 py-12 text-center text-gray-500">
+                      No registrations found in this section.
                     </td>
                   </tr>
                 ) : (
-                  registrations.map((reg) => (
+                  displayedRegistrations.map((reg) => (
                     <tr key={reg.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-mono text-gray-800 font-medium">{reg.id}</div>
@@ -243,7 +269,7 @@ function App() {
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-gray-200">
               <h3 className="font-semibold text-lg">Scan Student QR</h3>
-              <button onClick={() => setScannerOpen(false)} className="text-gray-500 hover:text-gray-800">
+              <button onClick={() => { setScannerOpen(false); setLastScannedId(null); }} className="text-gray-500 hover:text-gray-800">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
@@ -264,13 +290,10 @@ function App() {
               <p><strong>ID:</strong> {scannedReg.id}</p>
               <p><strong>Payment Status:</strong> {scannedReg.paymentStatus}</p>
               <p><strong>Registration Status:</strong> {scannedReg.registrationStatus}</p>
-              <p><strong>Attendance:</strong> {scannedReg.attendanceStatus ? <span className="text-green-600 font-bold">Already Checked In</span> : <span className="text-yellow-600 font-medium">Not Checked In</span>}</p>
+              <p><strong>Attendance:</strong> <span className="text-green-600 font-bold">Successfully Checked In!</span></p>
             </div>
             <div className="flex gap-3 justify-end">
-              <button onClick={() => setScannedReg(null)} className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
-              {!scannedReg.attendanceStatus && (
-                <button onClick={() => updateAttendance(scannedReg.id, true)} className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium">Check In Student</button>
-              )}
+              <button onClick={() => { setScannedReg(null); setLastScannedId(null); }} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium">Done</button>
             </div>
           </div>
         </div>
