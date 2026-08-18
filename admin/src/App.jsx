@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { Scanner } from '@yudiel/react-qr-scanner';
-
-const API_URL = 'https://yuva-sammelan.onrender.com'; // Pointing to live backend
-
+// Dynamically point to localhost when testing locally, and Render when live
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:5000'
+  : 'https://yuva-sammelan.onrender.com';
 function App() {
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +64,11 @@ function App() {
   const updatePaymentStatus = async (id, status, extraData = {}) => {
     const token = localStorage.getItem('adminToken');
     try {
+      // Optimistically update if approved
+      if (status === 'Approved') {
+        setRegistrations(prev => prev.map(r => r.id === id ? { ...r, paymentStatus: 'Approved', emailStatus: 'Pending' } : r));
+      }
+      
       await fetch(`${API_URL}/registrations/${id}`, {
         method: 'PATCH',
         headers: {
@@ -75,9 +81,27 @@ function App() {
           ...extraData
         }),
       });
-      fetchRegistrations();
+      
+      if (status === 'Approved') {
+        // Email takes a few seconds to send, so we poll the server up to 5 times
+        let attempts = 0;
+        const interval = setInterval(async () => {
+          attempts++;
+          const res = await fetch(`${API_URL}/registrations`, { headers: { 'Authorization': `Bearer ${token}` } });
+          const data = await res.json();
+          const updatedReg = data.find(r => r.id === id);
+          
+          if ((updatedReg && updatedReg.emailStatus !== 'Pending') || attempts >= 5) {
+            setRegistrations(data);
+            clearInterval(interval);
+          }
+        }, 2000);
+      } else {
+        fetchRegistrations();
+      }
     } catch (error) {
       console.error('Error updating status:', error);
+      fetchRegistrations();
     }
   };
 
@@ -115,8 +139,20 @@ function App() {
         throw new Error('Failed to resend');
       }
       
-      // Wait a moment then fetch latest status from backend
-      setTimeout(fetchRegistrations, 2000);
+      // Poll the server because sending an email takes a few seconds
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        const res = await fetch(`${API_URL}/registrations`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        const updatedReg = data.find(r => r.id === id);
+        
+        if ((updatedReg && updatedReg.emailStatus !== 'Pending') || attempts >= 5) {
+          setRegistrations(data);
+          clearInterval(interval);
+        }
+      }, 2000);
+      
     } catch (error) {
       console.error('Error resending email:', error);
       fetchRegistrations(); // Revert on error
