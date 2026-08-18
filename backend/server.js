@@ -1,6 +1,7 @@
-require('dotenv').config();
+// MUST be first - force IPv4 before any module loads to prevent ENETUNREACH on Render
 const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first'); // Force IPv4 for all connections - fixes ENETUNREACH on Render
+dns.setDefaultResultOrder('ipv4first');
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -49,13 +50,22 @@ const registrationSchema = new mongoose.Schema({
 
 const Registration = mongoose.model('Registration', registrationSchema);
 
-// Email Setup (Direct Gmail Service - fast delivery in ~2-3 seconds)
+// Email Setup
+// family:4 forces IPv4 at TCP socket level - critical fix for Render (IPv6 blocked)
+// service:'gmail' was bypassing dns.setDefaultResultOrder, so we use explicit host
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  family: 4, // <-- Force IPv4 at socket level, prevents ENETUNREACH 2607:f8b0... on Render
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  tls: {
+    rejectUnauthorized: false,
+    ciphers: 'SSLv3'
+  }
 });
 
 const sendConfirmationEmail = async (user) => {
