@@ -49,21 +49,13 @@ const registrationSchema = new mongoose.Schema({
 
 const Registration = mongoose.model('Registration', registrationSchema);
 
-// Email Setup (Direct SSL on Port 465 for instant, reliable cloud delivery)
+// Email Setup (Direct Gmail Service - fast delivery in ~2-3 seconds)
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // Direct SSL (fastest connection on Render)
+  service: 'gmail',
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 20000,
-  greetingTimeout: 15000,
-  socketTimeout: 30000,
 });
 
 const sendConfirmationEmail = async (user) => {
@@ -73,7 +65,7 @@ const sendConfirmationEmail = async (user) => {
     }
 
     const qrPayload = `YS2026:${user.id}`;
-    const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 250, margin: 1, errorCorrectionLevel: 'M' });
+    const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 200, margin: 1, errorCorrectionLevel: 'M' });
 
     const mailOptions = {
       from: `"Yuva Sammelan 2026" <${process.env.SMTP_USER}>`,
@@ -115,24 +107,9 @@ const sendConfirmationEmail = async (user) => {
       ]
     };
 
-    // Attempt to send with retry
-    let lastError = null;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        const info = await transporter.sendMail(mailOptions);
-        console.log(`📧 Email sent to ${user.email} [${info.messageId}] (Attempt ${attempt})`);
-        await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
-        return;
-      } catch (err) {
-        lastError = err;
-        console.warn(`⚠️ Email attempt ${attempt} failed for ${user.id}:`, err.message);
-        if (attempt < 2) {
-          await new Promise(r => setTimeout(r, 1500));
-        }
-      }
-    }
-
-    throw lastError;
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`📧 Email sent to ${user.email} [${info.messageId}]`);
+    await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
   } catch (error) {
     console.error('Failed to send email:', error);
     const errorMsg = error.message ? error.message.substring(0, 80) : 'Unknown Error';
