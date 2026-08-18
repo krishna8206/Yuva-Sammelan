@@ -100,6 +100,7 @@ function App() {
 
   const [registrationId, setRegistrationId] = useState(localStorage.getItem('registrationId') || null);
   const [step, setStep] = useState(registrationId ? 4 : 1);
+  const [errors, setErrors] = useState({});
   const [formData, setFormData] = useState(() => {
     const saved = localStorage.getItem('registrationFormData');
     return saved ? JSON.parse(saved) : {
@@ -125,12 +126,150 @@ function App() {
     localStorage.setItem('registrationFormData', JSON.stringify(formData));
   }, [formData]);
 
+  const calculateAge = (dobString) => {
+    if (!dobString) return '';
+    const birthDate = new Date(dobString);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age >= 0 ? String(age) : '';
+  };
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    if (name === 'dateOfBirth') {
+      const calculatedAge = calculateAge(value);
+      setFormData(prev => ({
+        ...prev,
+        dateOfBirth: value,
+        age: calculatedAge || prev.age
+      }));
+      if (errors.dateOfBirth || errors.age) {
+        setErrors(prev => ({ ...prev, dateOfBirth: '', age: '' }));
+      }
+      return;
+    }
+
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+
+    // 1. Full Name
+    const nameTrimmed = (formData.fullName || '').trim();
+    if (!nameTrimmed) {
+      newErrors.fullName = 'Full name is required';
+    } else if (nameTrimmed.length < 3) {
+      newErrors.fullName = 'Full name must be at least 3 characters';
+    } else if (!/^[a-zA-Z\s.'-]+$/.test(nameTrimmed)) {
+      newErrors.fullName = 'Full name should only contain alphabets';
+    }
+
+    // 2. Mobile Number (10 digits starting with 6,7,8,9)
+    const rawMobile = (formData.mobileNumber || '').replace(/[\s\-+]/g, '');
+    const mobileDigits = rawMobile.startsWith('91') && rawMobile.length === 12 ? rawMobile.slice(2) : rawMobile;
+    if (!formData.mobileNumber || !formData.mobileNumber.trim()) {
+      newErrors.mobileNumber = 'Mobile number is required';
+    } else if (!/^[6-9]\d{9}$/.test(mobileDigits)) {
+      newErrors.mobileNumber = 'Enter a valid 10-digit mobile number (e.g. 9876543210)';
+    }
+
+    // 3. Email Address
+    const emailTrimmed = (formData.email || '').trim();
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailTrimmed) {
+      newErrors.email = 'Email address is required';
+    } else if (!emailRegex.test(emailTrimmed)) {
+      newErrors.email = 'Enter a valid email address (e.g. name@example.com)';
+    }
+
+    // 4. Date of Birth
+    if (!formData.dateOfBirth) {
+      newErrors.dateOfBirth = 'Date of birth is required';
+    } else {
+      const birthDate = new Date(formData.dateOfBirth);
+      const today = new Date();
+      if (isNaN(birthDate.getTime()) || birthDate >= today) {
+        newErrors.dateOfBirth = 'Date of birth must be a past date';
+      }
+    }
+
+    // 5. Age
+    const ageNum = parseInt(formData.age, 10);
+    if (!formData.age || isNaN(ageNum)) {
+      newErrors.age = 'Age is required';
+    } else if (ageNum < 5 || ageNum > 100) {
+      newErrors.age = 'Age must be between 5 and 100';
+    }
+
+    // 6. Gender
+    if (!formData.gender) {
+      newErrors.gender = 'Please select your gender';
+    }
+
+    // 7. Blood Group
+    if (!formData.bloodGroup) {
+      newErrors.bloodGroup = 'Please select your blood group';
+    }
+
+    // 8. Profession & specific required sub-fields
+    if (!formData.profession) {
+      newErrors.profession = 'Please select your profession';
+    } else if (formData.profession === 'Study') {
+      if (!formData.institutionName || !formData.institutionName.trim()) {
+        newErrors.institutionName = 'School / College / University name is required';
+      } else if (formData.institutionName.trim().length < 2) {
+        newErrors.institutionName = 'Institution name must be at least 2 characters';
+      }
+    } else if (formData.profession === 'Job') {
+      if (!formData.companyName || !formData.companyName.trim()) {
+        newErrors.companyName = 'Company name is required';
+      } else if (formData.companyName.trim().length < 2) {
+        newErrors.companyName = 'Company name must be at least 2 characters';
+      }
+      if (!formData.designation || !formData.designation.trim()) {
+        newErrors.designation = 'Designation / Job Role is required';
+      } else if (formData.designation.trim().length < 2) {
+        newErrors.designation = 'Designation must be at least 2 characters';
+      }
+    } else if (formData.profession === 'Business') {
+      if (!formData.businessType || !formData.businessType.trim()) {
+        newErrors.businessType = 'Business type / category is required';
+      } else if (formData.businessType.trim().length < 2) {
+        newErrors.businessType = 'Business type must be at least 2 characters';
+      }
+      if (!formData.businessName || !formData.businessName.trim()) {
+        newErrors.businessName = 'Business name is required';
+      } else if (formData.businessName.trim().length < 2) {
+        newErrors.businessName = 'Business name must be at least 2 characters';
+      }
+    }
+
+    // 9. Address
+    const addressTrimmed = (formData.address || '').trim();
+    if (!addressTrimmed) {
+      newErrors.address = 'Residential address is required';
+    } else if (addressTrimmed.length < 5) {
+      newErrors.address = 'Please enter your full address (at least 5 characters)';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
     setStep(2); // Move to Payment Selection
   };
 
@@ -242,101 +381,123 @@ function App() {
           </div>
 
           {step === 1 ? (
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              {Object.keys(errors).length > 0 && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-3 rounded-r-lg text-xs text-red-700 font-medium animate-slide-up flex items-center gap-2">
+                  <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                  <span>Please fill in all required fields accurately before proceeding.</span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">Full Name</label>
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    Full Name <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     name="fullName"
                     value={formData.fullName}
                     onChange={handleChange}
-                    required
                     placeholder="Rahul Kumar"
-                    className="input-field py-2 px-3"
+                    className={`input-field py-2 px-3 ${errors.fullName ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   />
+                  {errors.fullName && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.fullName}</p>}
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">Mobile Number</label>
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    Mobile Number <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="tel"
                     name="mobileNumber"
                     value={formData.mobileNumber}
                     onChange={handleChange}
-                    required
-                    placeholder="+91 98765 43210"
-                    className="input-field py-2 px-3"
+                    maxLength="10"
+                    placeholder="9876543210"
+                    className={`input-field py-2 px-3 ${errors.mobileNumber ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   />
+                  {errors.mobileNumber && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.mobileNumber}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">Email Address</label>
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    Email Address <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    required
                     placeholder="rahul@example.com"
-                    className="input-field py-2 px-3"
+                    className={`input-field py-2 px-3 ${errors.email ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   />
+                  {errors.email && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.email}</p>}
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">Date of Birth</label>
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    Date of Birth <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="date"
                     name="dateOfBirth"
                     value={formData.dateOfBirth}
                     onChange={handleChange}
-                    required
-                    className="input-field py-2 px-3 text-gray-600"
+                    max={new Date().toISOString().split('T')[0]}
+                    className={`input-field py-2 px-3 text-gray-600 ${errors.dateOfBirth ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   />
+                  {errors.dateOfBirth && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.dateOfBirth}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">Age</label>
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    Age <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     name="age"
                     value={formData.age}
                     onChange={handleChange}
-                    required
-                    min="1"
-                    max="120"
+                    min="5"
+                    max="100"
                     placeholder="18"
-                    className="input-field py-2 px-3"
+                    className={`input-field py-2 px-3 ${errors.age ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   />
+                  {errors.age && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.age}</p>}
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">Gender</label>
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="gender"
                     value={formData.gender}
                     onChange={handleChange}
-                    required
-                    className="input-field py-2 px-3 bg-white"
+                    className={`input-field py-2 px-3 bg-white ${errors.gender ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   >
                     <option value="" disabled>Select Gender</option>
                     <option value="Male">Male</option>
                     <option value="Female">Female</option>
                     <option value="Other">Other</option>
                   </select>
+                  {errors.gender && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.gender}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">Blood Group</label>
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    Blood Group <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="bloodGroup"
                     value={formData.bloodGroup}
                     onChange={handleChange}
-                    required
-                    className="input-field py-2 px-3 bg-white"
+                    className={`input-field py-2 px-3 bg-white ${errors.bloodGroup ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   >
                     <option value="" disabled>Select Blood Group</option>
                     <option value="A+">A+</option>
@@ -348,107 +509,124 @@ function App() {
                     <option value="AB+">AB+</option>
                     <option value="AB-">AB-</option>
                   </select>
+                  {errors.bloodGroup && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.bloodGroup}</p>}
                 </div>
                 <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">Profession</label>
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    Profession <span className="text-red-500">*</span>
+                  </label>
                   <select
                     name="profession"
                     value={formData.profession}
                     onChange={handleChange}
-                    required
-                    className="input-field py-2 px-3 bg-white"
+                    className={`input-field py-2 px-3 bg-white ${errors.profession ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   >
                     <option value="" disabled>Select Profession</option>
                     <option value="Study">Study</option>
                     <option value="Job">Job</option>
                     <option value="Business">Business</option>
                   </select>
+                  {errors.profession && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.profession}</p>}
                 </div>
               </div>
 
-              {/* Dynamic Profession-Based Fields */}
+              {/* Dynamic Profession-Based Fields - All Required */}
               {formData.profession === 'Study' && (
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gray-700 pl-1">School / College / University Name</label>
+                <div className="space-y-1 animate-slide-up">
+                  <label className="text-sm font-semibold text-gray-700 pl-1">
+                    School / College / University Name <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     name="institutionName"
                     value={formData.institutionName}
                     onChange={handleChange}
-                    required
                     placeholder="Where do you study?"
-                    className="input-field py-2 px-3"
+                    className={`input-field py-2 px-3 ${errors.institutionName ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                   />
+                  {errors.institutionName && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.institutionName}</p>}
                 </div>
               )}
 
               {formData.profession === 'Job' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up">
                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-gray-700 pl-1">Company Name</label>
+                    <label className="text-sm font-semibold text-gray-700 pl-1">
+                      Company Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       name="companyName"
                       value={formData.companyName}
                       onChange={handleChange}
-                      required
                       placeholder="Enter company name"
-                      className="input-field py-2 px-3"
+                      className={`input-field py-2 px-3 ${errors.companyName ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                     />
+                    {errors.companyName && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.companyName}</p>}
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-gray-700 pl-1">Designation (Optional)</label>
+                    <label className="text-sm font-semibold text-gray-700 pl-1">
+                      Designation / Role <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       name="designation"
                       value={formData.designation}
                       onChange={handleChange}
                       placeholder="E.g. Software Engineer"
-                      className="input-field py-2 px-3"
+                      className={`input-field py-2 px-3 ${errors.designation ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                     />
+                    {errors.designation && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.designation}</p>}
                   </div>
                 </div>
               )}
 
               {formData.profession === 'Business' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-slide-up">
                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-gray-700 pl-1">Business Type</label>
+                    <label className="text-sm font-semibold text-gray-700 pl-1">
+                      Business Type / Industry <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       name="businessType"
                       value={formData.businessType}
                       onChange={handleChange}
-                      required
                       placeholder="E.g. Retail, Tech, Food"
-                      className="input-field py-2 px-3"
+                      className={`input-field py-2 px-3 ${errors.businessType ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                     />
+                    {errors.businessType && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.businessType}</p>}
                   </div>
                   <div className="space-y-1">
-                    <label className="text-sm font-semibold text-gray-700 pl-1">Business Name (Optional)</label>
+                    <label className="text-sm font-semibold text-gray-700 pl-1">
+                      Business Name <span className="text-red-500">*</span>
+                    </label>
                     <input
                       type="text"
                       name="businessName"
                       value={formData.businessName}
                       onChange={handleChange}
                       placeholder="Enter business name"
-                      className="input-field py-2 px-3"
+                      className={`input-field py-2 px-3 ${errors.businessName ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                     />
+                    {errors.businessName && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.businessName}</p>}
                   </div>
                 </div>
               )}
 
               <div className="space-y-1">
-                <label className="text-sm font-semibold text-gray-700 pl-1">Address</label>
+                <label className="text-sm font-semibold text-gray-700 pl-1">
+                  Address <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   name="address"
                   value={formData.address}
                   onChange={handleChange}
-                  required
                   rows="2"
                   placeholder="Enter your full residential address..."
-                  className="input-field resize-none py-2 px-3"
+                  className={`input-field resize-none py-2 px-3 ${errors.address ? 'border-red-500 bg-red-50/20 focus:ring-red-400' : ''}`}
                 ></textarea>
+                {errors.address && <p className="text-xs text-red-500 font-medium pl-1 mt-0.5">{errors.address}</p>}
               </div>
 
               <button
