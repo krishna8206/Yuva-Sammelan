@@ -83,19 +83,28 @@ function App() {
       });
       
       if (status === 'Approved') {
-        // Email takes a few seconds to send, so we poll the server up to 5 times
+        // Fast targeted polling for status update
         let attempts = 0;
         const interval = setInterval(async () => {
           attempts++;
-          const res = await fetch(`${API_URL}/registrations`, { headers: { 'Authorization': `Bearer ${token}` } });
-          const data = await res.json();
-          const updatedReg = data.find(r => r.id === id);
-          
-          if ((updatedReg && updatedReg.emailStatus !== 'Pending') || attempts >= 5) {
-            setRegistrations(data);
-            clearInterval(interval);
+          try {
+            const res = await fetch(`${API_URL}/registrations/${id}`);
+            if (res.ok) {
+              const updated = await res.json();
+              if (updated && updated.emailStatus !== 'Pending') {
+                setRegistrations(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
+                clearInterval(interval);
+                return;
+              }
+            }
+          } catch (e) {
+            console.error(e);
           }
-        }, 2000);
+          if (attempts >= 6) {
+            clearInterval(interval);
+            fetchRegistrations();
+          }
+        }, 1200);
       } else {
         fetchRegistrations();
       }
@@ -139,19 +148,28 @@ function App() {
         throw new Error('Failed to resend');
       }
       
-      // Poll the server because sending an email takes a few seconds
+      // Fast targeted polling
       let attempts = 0;
       const interval = setInterval(async () => {
         attempts++;
-        const res = await fetch(`${API_URL}/registrations`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const data = await res.json();
-        const updatedReg = data.find(r => r.id === id);
-        
-        if ((updatedReg && updatedReg.emailStatus !== 'Pending') || attempts >= 5) {
-          setRegistrations(data);
-          clearInterval(interval);
+        try {
+          const res = await fetch(`${API_URL}/registrations/${id}`);
+          if (res.ok) {
+            const updated = await res.json();
+            if (updated && updated.emailStatus !== 'Pending') {
+              setRegistrations(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
+              clearInterval(interval);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error(e);
         }
-      }, 2000);
+        if (attempts >= 6) {
+          clearInterval(interval);
+          fetchRegistrations();
+        }
+      }, 1200);
       
     } catch (error) {
       console.error('Error resending email:', error);

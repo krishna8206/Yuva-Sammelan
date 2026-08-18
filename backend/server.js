@@ -49,8 +49,9 @@ const registrationSchema = new mongoose.Schema({
 
 const Registration = mongoose.model('Registration', registrationSchema);
 
-// Email Setup (Gmail SMTP via Nodemailer)
+// Email Setup (Gmail SMTP via Nodemailer with Connection Pooling for high speed)
 const transporter = nodemailer.createTransport({
+  service: 'gmail',
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT) || 587,
   secure: parseInt(process.env.SMTP_PORT) === 465,
@@ -58,6 +59,10 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
+  rateLimit: 5,
 });
 
 const sendConfirmationEmail = async (user) => {
@@ -67,7 +72,7 @@ const sendConfirmationEmail = async (user) => {
     }
 
     const qrPayload = `YS2026:${user.id}`;
-    const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 300 });
+    const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 250, margin: 1, errorCorrectionLevel: 'M' });
 
     const mailOptions = {
       from: `"Yuva Sammelan 2026" <${process.env.SMTP_USER}>`,
