@@ -264,19 +264,19 @@ function App() {
     <div className="min-h-screen bg-gray-50 flex flex-col font-sans">
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="bg-saffron text-white p-2 rounded-lg shadow-sm">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="bg-saffron text-white p-1.5 sm:p-2 rounded-lg shadow-sm">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
             </div>
-            <h1 className="text-xl font-bold text-gray-800">Yuva Sammelan Admin</h1>
+            <h1 className="text-base sm:text-xl font-bold text-gray-800 leading-tight">Yuva<br className="sm:hidden" /> Sammelan</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <button 
               onClick={() => setScannerOpen(true)}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md shadow-sm hover:bg-blue-700 font-medium text-sm"
+              className="flex items-center gap-1.5 sm:gap-2 bg-blue-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-md shadow-sm hover:bg-blue-700 font-medium text-xs sm:text-sm"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-              Scan QR
+              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+              <span>Scan QR</span>
             </button>
             <button 
               onClick={() => {
@@ -285,7 +285,7 @@ function App() {
                 setEmail('');
                 setPassword('');
               }}
-              className="text-gray-500 hover:text-red-600 font-medium text-sm transition-colors"
+              className="text-gray-500 hover:text-red-600 font-medium text-xs sm:text-sm transition-colors"
             >
               Logout
             </button>
@@ -318,19 +318,19 @@ function App() {
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div className="flex bg-gray-200/50 p-1 rounded-lg">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="flex w-full sm:w-auto bg-gray-200/50 p-1 rounded-lg">
               <button 
                 onClick={() => setActiveTab('approvals')}
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'approvals' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'approvals' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                Registration Approvals
+                Registration<span className="hidden sm:inline"> Approvals</span>
               </button>
               <button 
                 onClick={() => setActiveTab('attendance')}
-                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === 'attendance' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                className={`flex-1 sm:flex-none px-2 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-md transition-colors ${activeTab === 'attendance' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
               >
-                Marked Attendance
+                Attendance
               </button>
             </div>
             <button onClick={fetchRegistrations} className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1 font-medium">
@@ -339,8 +339,117 @@ function App() {
             </button>
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm whitespace-nowrap">
+          <div className="bg-white">
+            {/* Mobile View */}
+            <div className="block sm:hidden divide-y divide-gray-100">
+              {loading ? (
+                 <div className="p-8 text-center text-gray-500 text-sm">Loading...</div>
+              ) : displayedRegistrations.length === 0 ? (
+                 <div className="p-8 text-center text-gray-500 text-sm">No registrations found.</div>
+              ) : (
+                displayedRegistrations.map((reg) => (
+                  <div key={reg.id} className="p-4 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-semibold text-gray-800">{reg.fullName}</div>
+                        <div className="text-gray-500 text-xs">{reg.mobileNumber}</div>
+                      </div>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700">
+                        {reg.profession}
+                      </span>
+                    </div>
+                    
+                    <div className="flex justify-between items-center text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      <span className="font-mono">{reg.id}</span>
+                      <span>{new Date(reg.timestamp).toLocaleDateString()}</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-gray-400">Payment Method</span>
+                        <span className="font-medium text-gray-700 flex items-center gap-1">
+                          {reg.paymentMethod}
+                        </span>
+                        {reg.paymentMethod === 'Cash' && reg.paymentStatus === 'Pending' && !reg.cashCollectedBy && (
+                          <input 
+                            type="text" 
+                            placeholder="Collected By" 
+                            className="mt-1 border border-gray-200 rounded p-1 w-full text-[10px]"
+                            id={`mobile-collector-${reg.id}`}
+                          />
+                        )}
+                        {reg.cashCollectedBy && (
+                          <div className="text-[10px] text-gray-500 mt-1">By: {reg.cashCollectedBy}</div>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`inline-flex w-max items-center px-2 py-0.5 rounded font-medium ${
+                          reg.paymentStatus === 'Approved' ? 'bg-green-100 text-green-700' :
+                          reg.paymentStatus === 'Rejected' ? 'bg-red-100 text-red-700' :
+                          'bg-yellow-100 text-yellow-700'
+                        }`}>
+                          Pay: {reg.paymentStatus}
+                        </span>
+                        <span className={`inline-flex w-max items-center px-2 py-0.5 rounded font-medium ${
+                          reg.registrationStatus === 'Confirmed' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'
+                        }`}>
+                          Reg: {reg.registrationStatus}
+                        </span>
+                        {reg.attendanceStatus && (
+                          <span className="inline-flex w-max items-center px-2 py-0.5 rounded font-medium bg-indigo-100 text-indigo-700">
+                            Attended: Yes
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-gray-100 flex justify-end gap-2 items-center">
+                      {reg.paymentStatus === 'Pending' ? (
+                        <>
+                          <button
+                            onClick={() => {
+                              const collector = reg.paymentMethod === 'Cash' 
+                                ? (reg.cashCollectedBy || document.getElementById(`mobile-collector-${reg.id}`)?.value)
+                                : '';
+                              if (reg.paymentMethod === 'Cash' && !collector) {
+                                alert('Please enter who collected the cash before approving.');
+                                return;
+                              }
+                              updatePaymentStatus(reg.id, 'Approved', { cashCollectedBy: collector });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium rounded shadow-sm text-white bg-green-600 hover:bg-green-700"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => updatePaymentStatus(reg.id, 'Rejected')}
+                            className="px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {reg.paymentStatus === 'Approved' && (
+                            <button
+                              onClick={() => resendEmail(reg.id)}
+                              disabled={reg.emailStatus === 'Pending'}
+                              className="px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              {reg.emailStatus === 'Pending' ? 'Sending...' : 'Resend Email'}
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Desktop View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-gray-50 border-b border-gray-200 text-gray-500 uppercase tracking-wider font-semibold text-xs">
                 <tr>
                   <th className="px-6 py-4">ID / Date</th>
@@ -485,6 +594,7 @@ function App() {
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </div>
       </main>
