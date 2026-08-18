@@ -12,6 +12,7 @@ function App() {
   const [scannedReg, setScannedReg] = useState(null);
   const [lastScannedId, setLastScannedId] = useState(null);
   const [activeTab, setActiveTab] = useState('approvals');
+  const [sendingEmailIds, setSendingEmailIds] = useState(new Set());
 
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -67,6 +68,7 @@ function App() {
       // Optimistically update if approved
       if (status === 'Approved') {
         setRegistrations(prev => prev.map(r => r.id === id ? { ...r, paymentStatus: 'Approved', emailStatus: 'Pending' } : r));
+        setSendingEmailIds(prev => new Set(prev).add(id));
       }
       
       await fetch(`${API_URL}/registrations/${id}`, {
@@ -93,6 +95,11 @@ function App() {
               const updated = await res.json();
               if (updated && updated.emailStatus !== 'Pending') {
                 setRegistrations(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
+                setSendingEmailIds(prev => {
+                  const next = new Set(prev);
+                  next.delete(id);
+                  return next;
+                });
                 clearInterval(interval);
                 return;
               }
@@ -102,6 +109,11 @@ function App() {
           }
           if (attempts >= 6) {
             clearInterval(interval);
+            setSendingEmailIds(prev => {
+              const next = new Set(prev);
+              next.delete(id);
+              return next;
+            });
             fetchRegistrations();
           }
         }, 1200);
@@ -110,6 +122,11 @@ function App() {
       }
     } catch (error) {
       console.error('Error updating status:', error);
+      setSendingEmailIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
       fetchRegistrations();
     }
   };
@@ -134,8 +151,7 @@ function App() {
   const resendEmail = async (id) => {
     const token = localStorage.getItem('adminToken');
     try {
-      // Optimistically update UI to 'Pending'
-      setRegistrations(prev => prev.map(r => r.id === id ? { ...r, emailStatus: 'Pending' } : r));
+      setSendingEmailIds(prev => new Set(prev).add(id));
       
       const response = await fetch(`${API_URL}/registrations/${id}/resend-email`, {
         method: 'POST',
@@ -158,6 +174,11 @@ function App() {
             const updated = await res.json();
             if (updated && updated.emailStatus !== 'Pending') {
               setRegistrations(prev => prev.map(r => r.id === id ? { ...r, ...updated } : r));
+              setSendingEmailIds(prev => {
+                const next = new Set(prev);
+                next.delete(id);
+                return next;
+              });
               clearInterval(interval);
               return;
             }
@@ -167,13 +188,23 @@ function App() {
         }
         if (attempts >= 6) {
           clearInterval(interval);
+          setSendingEmailIds(prev => {
+            const next = new Set(prev);
+            next.delete(id);
+            return next;
+          });
           fetchRegistrations();
         }
       }, 1200);
       
     } catch (error) {
       console.error('Error resending email:', error);
-      fetchRegistrations(); // Revert on error
+      setSendingEmailIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      fetchRegistrations();
     }
   };
 
@@ -451,10 +482,10 @@ function App() {
                           {reg.paymentStatus === 'Approved' && (
                             <button
                               onClick={() => resendEmail(reg.id)}
-                              disabled={reg.emailStatus === 'Pending'}
-                              className="px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
+                              disabled={sendingEmailIds.has(reg.id)}
+                              className="px-3 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
                             >
-                              {reg.emailStatus === 'Pending' ? 'Sending...' : 'Resend Email'}
+                              {sendingEmailIds.has(reg.id) ? 'Sending...' : 'Resend Email'}
                             </button>
                           )}
                         </>
@@ -597,10 +628,10 @@ function App() {
                             {reg.paymentStatus === 'Approved' && (
                               <button
                                 onClick={() => resendEmail(reg.id)}
-                                disabled={reg.emailStatus === 'Pending'}
+                                disabled={sendingEmailIds.has(reg.id)}
                                 className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none disabled:opacity-50 transition-colors"
                               >
-                                {reg.emailStatus === 'Pending' ? 'Sending...' : 'Resend Email'}
+                                {sendingEmailIds.has(reg.id) ? 'Sending...' : 'Resend Email'}
                               </button>
                             )}
                             <span className="text-gray-400 text-xs italic">Action taken</span>
