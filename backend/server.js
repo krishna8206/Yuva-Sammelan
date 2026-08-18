@@ -49,20 +49,21 @@ const registrationSchema = new mongoose.Schema({
 
 const Registration = mongoose.model('Registration', registrationSchema);
 
-// Email Setup (Gmail SMTP via Nodemailer with Connection Pooling for high speed)
+// Email Setup (Direct SSL on Port 465 for instant, reliable cloud delivery)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: parseInt(process.env.SMTP_PORT) === 465,
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // Direct SSL (fastest connection on Render)
   auth: {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  pool: true,
-  maxConnections: 5,
-  maxMessages: 100,
-  rateLimit: 5,
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 20000,
+  greetingTimeout: 15000,
+  socketTimeout: 30000,
 });
 
 const sendConfirmationEmail = async (user) => {
@@ -114,9 +115,24 @@ const sendConfirmationEmail = async (user) => {
       ]
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`📧 Email sent to ${user.email} [${info.messageId}]`);
-    await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
+    // Attempt to send with retry
+    let lastError = null;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log(`📧 Email sent to ${user.email} [${info.messageId}] (Attempt ${attempt})`);
+        await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
+        return;
+      } catch (err) {
+        lastError = err;
+        console.warn(`⚠️ Email attempt ${attempt} failed for ${user.id}:`, err.message);
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 1500));
+        }
+      }
+    }
+
+    throw lastError;
   } catch (error) {
     console.error('Failed to send email:', error);
     const errorMsg = error.message ? error.message.substring(0, 80) : 'Unknown Error';
