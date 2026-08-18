@@ -1,8 +1,10 @@
 require('dotenv').config();
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first'); // Force IPv4 for all connections - fixes ENETUNREACH on Render
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
 const jwt = require('jsonwebtoken');
 
@@ -47,22 +49,29 @@ const registrationSchema = new mongoose.Schema({
 
 const Registration = mongoose.model('Registration', registrationSchema);
 
-// Email Setup (Resend HTTP API - works on all cloud platforms)
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Email Setup (Gmail SMTP via Nodemailer)
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT) || 587,
+  secure: parseInt(process.env.SMTP_PORT) === 465,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 const sendConfirmationEmail = async (user) => {
   try {
-    if (!process.env.RESEND_API_KEY) {
-      throw new Error('RESEND_API_KEY is missing from environment variables');
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+      throw new Error('SMTP credentials missing from environment variables');
     }
 
     const qrPayload = `YS2026:${user.id}`;
     const qrBuffer = await QRCode.toBuffer(qrPayload, { type: 'png', width: 300 });
-    const qrBase64 = qrBuffer.toString('base64');
 
-    const { data, error } = await resend.emails.send({
-      from: 'Yuva Sammelan 2026 <onboarding@resend.dev>',
-      to: [user.email],
+    const mailOptions = {
+      from: `"Yuva Sammelan 2026" <${process.env.SMTP_USER}>`,
+      to: user.email,
       subject: `Registration Confirmed - ${user.id}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 10px; padding: 20px;">
@@ -77,7 +86,7 @@ const sendConfirmationEmail = async (user) => {
           
           <div style="text-align: center; margin-top: 20px;">
             <h3 style="color: #333; margin-bottom: 10px;">Your Entry Pass</h3>
-            <img src="data:image/png;base64,${qrBase64}" alt="Registration QR Code" style="width: 200px; height: 200px; border-radius: 10px; border: 1px solid #ddd;" />
+            <img src="cid:qrcode" alt="Registration QR Code" style="width: 200px; height: 200px; border-radius: 10px; border: 1px solid #ddd;" />
           </div>
 
           <div style="background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin-top: 25px;">
@@ -91,13 +100,17 @@ const sendConfirmationEmail = async (user) => {
           </div>
         </div>
       `,
-    });
+      attachments: [
+        {
+          filename: 'registration-qrcode.png',
+          content: qrBuffer,
+          cid: 'qrcode'
+        }
+      ]
+    };
 
-    if (error) {
-      throw new Error(error.message || JSON.stringify(error));
-    }
-
-    console.log(`📧 Email sent to ${user.email} [${data.id}]`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`📧 Email sent to ${user.email} [${info.messageId}]`);
     await Registration.findOneAndUpdate({ id: user.id }, { emailStatus: 'Sent' });
   } catch (error) {
     console.error('Failed to send email:', error);
