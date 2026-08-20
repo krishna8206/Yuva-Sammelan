@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
+import logoImg from './assets/logo.png';
+import bannerImg from './assets/banner.jpg';
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5000'
@@ -51,13 +53,16 @@ function VerifyProfile({ id }) {
     <div className="min-h-screen bg-gray-50 flex flex-col items-center p-4 sm:p-8 animate-slide-up">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden mt-6 md:mt-12 border border-gray-100">
         <div className={`p-8 text-center text-white ${data.paymentStatus === 'Approved' ? 'bg-gradient-to-br from-green-500 to-emerald-700' : data.paymentStatus === 'Rejected' ? 'bg-gradient-to-br from-red-500 to-rose-700' : 'bg-gradient-to-br from-yellow-400 to-orange-500'}`}>
+          <div className="w-20 h-20 mx-auto mb-4 rounded-full overflow-hidden border-2 border-white/40 shadow-xl bg-black flex items-center justify-center p-1">
+            <img src={logoImg} alt="Yuva Sammelan" className="w-full h-full object-contain" />
+          </div>
           <div className="inline-block bg-white/20 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border border-white/30 backdrop-blur-sm">
             {data.paymentStatus}
           </div>
           <h1 className="text-3xl font-bold mb-1">{data.fullName}</h1>
           <p className="opacity-90 font-mono tracking-widest">{data.id}</p>
         </div>
-        
+
         <div className="p-6 space-y-5">
           <div className="grid grid-cols-2 gap-y-4 gap-x-2">
             <div>
@@ -77,7 +82,7 @@ function VerifyProfile({ id }) {
               <p className="font-semibold text-gray-800">{data.profession}</p>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-100 pt-5">
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Payment & Registration</p>
             <div className="flex justify-between items-center bg-gray-50 p-3 rounded-xl mt-2">
@@ -85,7 +90,7 @@ function VerifyProfile({ id }) {
               <span className={`text-xs font-bold px-2 py-1 rounded-md ${data.registrationStatus === 'Confirmed' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>{data.registrationStatus}</span>
             </div>
           </div>
-          
+
           <button onClick={() => window.location.href = '/'} className="w-full mt-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3.5 px-4 rounded-xl transition-colors">
             Back to Home
           </button>
@@ -340,9 +345,23 @@ function App() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-saffron/20 blur-3xl animate-float" style={{ animationDelay: '0s' }}></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-india-green/20 blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
 
+      {/* Top Left Corner Logo Branding */}
+      <div className="absolute top-3 left-3 sm:top-5 sm:left-6 md:top-6 md:left-8 z-20 flex items-center gap-3 animate-slide-up">
+        <div className="relative group cursor-pointer" onClick={() => window.location.href = '/'}>
+          <div className="absolute -inset-1 bg-gradient-to-r from-saffron via-amber-500 to-india-green rounded-full blur-md opacity-75 group-hover:opacity-100 transition duration-300"></div>
+          <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-black p-1 shadow-2xl border-2 border-white">
+            <img
+              src={logoImg}
+              alt="Yuva Sammelan Logo"
+              className="w-full h-full object-contain rounded-full transition-transform duration-300 group-hover:scale-105"
+            />
+          </div>
+        </div>
+      </div>
+
       {/* Main Event Title */}
-      <div className="relative z-10 text-center mb-8 md:mb-10 animate-slide-up">
-        <h1 className="text-5xl sm:text-6xl font-black mb-4 text-gray-800 tracking-tight drop-shadow-sm">
+      <div className="relative z-10 text-center mb-6 md:mb-8 animate-slide-up">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-3 text-gray-800 tracking-tight drop-shadow-sm">
           Yuva <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron via-[#d48c3e] to-india-green">Sammelan</span>
         </h1>
         <p className="text-gray-600 font-medium sm:text-lg max-w-2xl mx-auto px-4">
@@ -354,12 +373,11 @@ function App() {
       <div className="max-w-5xl w-full bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/50 flex flex-col md:flex-row animate-slide-up relative z-10" style={{ animationDelay: '0.1s' }}>
 
         {/* Left Side - Image & Banner */}
-        <div className="w-full md:w-5/12 relative overflow-hidden group bg-black min-h-[250px] md:min-h-full">
-          {/* Clear Background Image, fully visible, no text overlay */}
+        <div className="w-full md:w-5/12 relative overflow-hidden group min-h-[320px] md:min-h-full bg-slate-900 flex items-center justify-center">
           <img
-            src="/yuva_bg.jpg"
-            alt="Yuva Sammelan Background"
-            className="absolute inset-0 w-full h-full transition-transform duration-[3000ms] group-hover:scale-105"
+            src={bannerImg}
+            alt="Yuva Sammelan 2026 Poster"
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
         </div>
 
@@ -367,20 +385,20 @@ function App() {
         <div className="w-full md:w-7/12 p-8 sm:p-12 bg-white flex flex-col">
           <div className="mb-6 text-center md:text-left border-b border-gray-100 pb-5">
             <h2 className="text-2xl font-bold text-gray-800 mb-1">
-              {step === 1 ? 'Registration Form' : 
-               step === 2 ? 'Payment Method' : 
-               step === 3 ? 'Complete Payment' : 
-               step === 4 ? 'Verification Pending' : 
-               step === 5 ? 'Cash Details' : 
-               step === 6 ? 'Success' : 'Registration Failed'}
+              {step === 1 ? 'Registration Form' :
+                step === 2 ? 'Payment Method' :
+                  step === 3 ? 'Complete Payment' :
+                    step === 4 ? 'Verification Pending' :
+                      step === 5 ? 'Cash Details' :
+                        step === 6 ? 'Success' : 'Registration Failed'}
             </h2>
             <p className="text-gray-500 text-sm">
-              {step === 1 ? 'Join the movement. Fill in your details below.' : 
-               step === 2 ? 'Please select your preferred payment method.' : 
-               step === 3 ? 'Scan the QR code below to pay the registration fee.' : 
-               step === 4 ? 'Your registration is currently under review.' : 
-               step === 5 ? 'Provide collector details' : 
-               step === 6 ? 'You are successfully registered.' : 'Your registration was rejected.'}
+              {step === 1 ? 'Join the movement. Fill in your details below.' :
+                step === 2 ? 'Please select your preferred payment method.' :
+                  step === 3 ? 'Scan the QR code below to pay the registration fee.' :
+                    step === 4 ? 'Your registration is currently under review.' :
+                      step === 5 ? 'Provide collector details' :
+                        step === 6 ? 'You are successfully registered.' : 'Your registration was rejected.'}
             </p>
           </div>
 
@@ -656,7 +674,7 @@ function App() {
                 <p className="text-gray-500 text-sm font-medium mb-1 uppercase tracking-wider">Registration Amount</p>
                 <p className="text-4xl font-black text-gray-800">₹20</p>
               </div>
-              
+
               <div className="space-y-4">
                 <button
                   onClick={() => handlePayment('Online')}
@@ -672,7 +690,7 @@ function App() {
                   </div>
                   <svg className="w-5 h-5 text-gray-400 group-hover:text-saffron transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
                 </button>
-                
+
                 <button
                   onClick={() => handlePayment('Cash')}
                   className="w-full group relative bg-white border-2 border-gray-100 hover:border-india-green/50 rounded-2xl p-5 flex items-center text-left transition-all duration-300 hover:shadow-lg overflow-hidden"
@@ -702,10 +720,10 @@ function App() {
               <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 p-6 rounded-3xl shadow-lg relative overflow-hidden w-full">
                 <p className="text-center text-gray-700 text-sm font-bold mb-4 uppercase tracking-wider">Scan to Pay ₹20</p>
                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-center items-center w-full mx-auto">
-                  <QRCode 
-                    value="upi://pay?pa=asarsaharsh92221@oksbi&pn=Harsh%20Asarsa&am=20&cu=INR&tn=Yuva%20Sammelan%20Registration&aid=uGICAgICrgbjJIQ" 
-                    size={210} 
-                    className="w-48 h-48 sm:w-52 sm:h-52 mx-auto" 
+                  <QRCode
+                    value="upi://pay?pa=asarsaharsh92221@oksbi&pn=Harsh%20Asarsa&am=20&cu=INR&tn=Yuva%20Sammelan%20Registration&aid=uGICAgICrgbjJIQ"
+                    size={210}
+                    className="w-48 h-48 sm:w-52 sm:h-52 mx-auto"
                   />
                 </div>
                 <p className="text-xs text-gray-600 text-center mt-3 font-medium">
@@ -721,7 +739,7 @@ function App() {
                   </a>
                 </div>
               </div>
-              
+
               <button
                 onClick={() => { saveRegistration('Online'); setStep(4); }}
                 className="w-full bg-gradient-to-r from-saffron via-[#ffb066] to-india-green hover:from-saffron-dark hover:to-india-green-light text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
@@ -731,7 +749,7 @@ function App() {
                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                 </span>
               </button>
-              
+
               <button
                 onClick={() => setStep(2)}
                 className="inline-flex items-center justify-center text-gray-500 hover:text-gray-800 font-medium py-2 px-4 transition-colors w-max mx-auto group mt-2"
@@ -746,7 +764,7 @@ function App() {
                 <h3 className="text-2xl font-bold text-gray-800 mb-2">Cash Collection Details</h3>
                 <p className="text-gray-500 text-sm">Please enter the name of the volunteer or person who collected your cash.</p>
               </div>
-              
+
               <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="space-y-1">
                   <label className="text-sm font-semibold text-gray-700 pl-1">Cash Collected By</label>
@@ -761,7 +779,7 @@ function App() {
                   />
                 </div>
               </div>
-              
+
               <button
                 onClick={() => {
                   if (!formData.cashCollectedBy) {
@@ -778,7 +796,7 @@ function App() {
                   <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                 </span>
               </button>
-              
+
               <button
                 onClick={() => setStep(2)}
                 className="inline-flex items-center justify-center text-gray-500 hover:text-gray-800 font-medium py-2 px-4 transition-colors w-max mx-auto group mt-2"
@@ -790,18 +808,18 @@ function App() {
           ) : step === 6 ? (
             <div className="flex flex-col flex-1 justify-center space-y-5 max-w-sm mx-auto w-full items-center animate-slide-up text-center">
               <h3 className="text-2xl font-bold text-gray-800">Registration Approved!</h3>
-              
+
               <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 shadow-sm w-full">
                 <p className="text-gray-600 text-sm leading-relaxed mb-4">
                   Congratulations! Your registration is confirmed. Please present this QR code at the venue.
                 </p>
-                
+
                 <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 inline-block">
                   <QRCode value={`YS2026:${registrationId}`} size={160} />
                 </div>
                 <p className="font-mono font-bold text-gray-700 tracking-wider text-sm mt-3">{registrationId}</p>
               </div>
-              
+
               <button
                 onClick={() => {
                   localStorage.removeItem('registrationId');
@@ -820,15 +838,15 @@ function App() {
               <div className="w-24 h-24 bg-red-50 border-4 border-red-100 rounded-full flex items-center justify-center mb-4">
                 <svg className="w-12 h-12 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </div>
-              
+
               <h3 className="text-2xl font-bold text-gray-800">Registration Rejected</h3>
-              
+
               <div className="bg-gray-50 border border-gray-100 rounded-2xl p-5 shadow-sm">
                 <p className="text-gray-600 text-sm leading-relaxed">
                   We're sorry, but your payment could not be verified by the admin. Please try again or contact support.
                 </p>
               </div>
-              
+
               <button
                 onClick={() => {
                   localStorage.removeItem('registrationId');
@@ -847,7 +865,7 @@ function App() {
               <div className="w-20 h-20 bg-blue-50 border-4 border-blue-100 rounded-full flex items-center justify-center mb-1">
                 <svg className="w-10 h-10 text-blue-500 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               </div>
-              
+
               <div>
                 <h3 className="text-2xl font-bold text-gray-800 mb-1">Payment Under Verification</h3>
                 {registrationId && (
@@ -856,13 +874,13 @@ function App() {
                   </p>
                 )}
               </div>
-              
+
               <div className="bg-gray-50 border border-gray-100 rounded-2xl p-4 shadow-sm">
                 <p className="text-gray-600 text-sm leading-relaxed">
                   Your registration is submitted and currently under review. This page will automatically update once the admin approves or rejects your payment.
                 </p>
               </div>
-              
+
               <div className="text-gray-500 text-xs flex items-center justify-center gap-2">
                 <svg className="w-4 h-4 animate-spin text-saffron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 Waiting for Admin approval...
