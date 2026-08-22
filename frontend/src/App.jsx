@@ -341,16 +341,16 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-3 sm:p-6 md:p-8 relative overflow-hidden">
       {/* Background Decorative Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-saffron/20 blur-3xl animate-float" style={{ animationDelay: '0s' }}></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-india-green/20 blur-3xl animate-float" style={{ animationDelay: '2s' }}></div>
 
-      {/* Top Left Corner Logo Branding */}
-      <div className="absolute top-3 left-3 sm:top-5 sm:left-6 md:top-6 md:left-8 z-20 flex items-center gap-3 animate-slide-up">
+      {/* Top Left Corner Logo Branding on Laptop / Desktop (md+) */}
+      <div className="hidden md:block absolute top-4 left-4 sm:top-6 sm:left-6 lg:left-8 z-30 animate-slide-up">
         <div className="relative group cursor-pointer" onClick={() => window.location.href = '/'}>
           <div className="absolute -inset-1 bg-gradient-to-r from-saffron via-amber-500 to-india-green rounded-full blur-md opacity-75 group-hover:opacity-100 transition duration-300"></div>
-          <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden bg-black p-1 shadow-2xl border-2 border-white">
+          <div className="relative w-20 h-20 lg:w-24 lg:h-24 rounded-full overflow-hidden bg-black p-1 shadow-2xl border-2 border-white">
             <img
               src={logoImg}
               alt="Yuva Sammelan Logo"
@@ -360,32 +360,48 @@ function App() {
         </div>
       </div>
 
-      {/* Main Event Title */}
-      <div className="relative z-10 text-center mb-6 md:mb-8 animate-slide-up">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black mb-3 text-gray-800 tracking-tight drop-shadow-sm">
+      {/* Top Header Section */}
+      <div className="relative z-10 text-center mb-5 md:mb-8 animate-slide-up flex flex-col items-center w-full max-w-4xl">
+        {/* Logo on Mobile ONLY */}
+        <div
+          className="md:hidden relative group cursor-pointer mb-2.5 z-20"
+          onClick={() => window.location.href = '/'}
+        >
+          <div className="absolute -inset-1 bg-gradient-to-r from-saffron via-amber-500 to-india-green rounded-full blur-md opacity-75 group-hover:opacity-100 transition duration-300"></div>
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden bg-black p-1 shadow-2xl border-2 border-white">
+            <img
+              src={logoImg}
+              alt="Yuva Sammelan Logo"
+              className="w-full h-full object-contain rounded-full transition-transform duration-300 group-hover:scale-105"
+            />
+          </div>
+        </div>
+
+        {/* Main Event Title */}
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-black mb-1.5 sm:mb-3 text-gray-800 tracking-tight drop-shadow-sm">
           Yuva <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron via-[#d48c3e] to-india-green">Sammelan</span>
         </h1>
-        <p className="text-gray-600 font-medium sm:text-lg max-w-2xl mx-auto px-4">
+        <p className="text-gray-600 font-medium text-xs sm:text-base md:text-lg max-w-xl mx-auto px-2">
           Empowering the youth to build a stronger, brighter future for the nation.
         </p>
       </div>
 
       {/* Main Container */}
-      <div className="max-w-5xl w-full bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl overflow-hidden border border-white/50 flex flex-col md:flex-row animate-slide-up relative z-10" style={{ animationDelay: '0.1s' }}>
+      <div className="max-w-5xl w-full bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden border border-white/50 flex flex-col md:flex-row animate-slide-up relative z-10" style={{ animationDelay: '0.1s' }}>
 
         {/* Left Side - Image & Banner */}
-        <div className="w-full md:w-5/12 relative overflow-hidden group min-h-[320px] md:min-h-full bg-slate-900 flex items-center justify-center">
+        <div className="w-full md:w-5/12 relative overflow-hidden group h-44 sm:h-64 md:h-auto md:min-h-[500px] bg-slate-900 flex items-center justify-center shrink-0">
           <img
             src={bannerImg}
             alt="Yuva Sammelan 2026 Poster"
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            className="w-full h-full object-cover object-top md:object-center transition-transform duration-700 group-hover:scale-105"
           />
         </div>
 
         {/* Right Side - Form */}
-        <div className="w-full md:w-7/12 p-8 sm:p-12 bg-white flex flex-col">
-          <div className="mb-6 text-center md:text-left border-b border-gray-100 pb-5">
-            <h2 className="text-2xl font-bold text-gray-800 mb-1">
+        <div className="w-full md:w-7/12 p-5 sm:p-8 md:p-12 bg-white flex flex-col justify-center">
+          <div className="mb-5 sm:mb-6 text-center md:text-left border-b border-gray-100 pb-4 sm:pb-5">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">
               {step === 1 ? 'Registration Form' :
                 step === 2 ? 'Payment Method' :
                   step === 3 ? 'Complete Payment' :
