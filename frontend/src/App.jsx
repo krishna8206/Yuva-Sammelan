@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import logoImg from './assets/logo.png';
 import bannerImg from './assets/banner.jpg';
+import phonepeQrImg from './assets/phonepe_qr.png';
 
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:5000'
@@ -717,32 +718,19 @@ function App() {
             </div>
           ) : step === 3 ? (
             <div className="flex flex-col flex-1 justify-center space-y-6 max-w-sm mx-auto w-full items-center animate-slide-up">
-              <div className="bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 p-6 rounded-3xl shadow-lg relative overflow-hidden w-full">
-                <p className="text-center text-gray-700 text-sm font-bold mb-4 uppercase tracking-wider">Scan to Pay ₹20</p>
-                <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-center items-center w-full mx-auto">
-                  <QRCode
-                    value="upi://pay?pa=asarsaharsh92221@oksbi&pn=Harsh%20Asarsa&am=20&cu=INR&tn=Yuva%20Sammelan%20Registration&aid=uGICAgICrgbjJIQ"
-                    size={210}
-                    className="w-48 h-48 sm:w-52 sm:h-52 mx-auto"
+              <div className="bg-white border border-gray-200 p-6 rounded-3xl shadow-lg relative overflow-hidden w-full text-center">
+                <div className="rounded-2xl overflow-hidden shadow-inner border border-gray-100 bg-gray-50/50 p-4 flex justify-center items-center">
+                  <img
+                    src={phonepeQrImg}
+                    alt="Payment QR Code"
+                    className="w-full max-w-[260px] h-auto object-contain rounded-xl"
                   />
-                </div>
-                <p className="text-xs text-gray-600 text-center mt-3 font-medium">
-                  Scan using GPay, PhonePe, Paytm, or any UPI app.
-                </p>
-                <div className="mt-3 text-center">
-                  <a
-                    href="upi://pay?pa=asarsaharsh92221@oksbi&pn=Harsh%20Asarsa&am=20&cu=INR&tn=Yuva%20Sammelan%20Registration&aid=uGICAgICrgbjJIQ"
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg text-xs font-semibold transition-colors"
-                  >
-                    <span>Tap here to Pay via UPI App</span>
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                  </a>
                 </div>
               </div>
 
               <button
                 onClick={() => { saveRegistration('Online'); setStep(4); }}
-                className="w-full bg-gradient-to-r from-saffron via-[#ffb066] to-india-green hover:from-saffron-dark hover:to-india-green-light text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group"
+                className="w-full bg-gradient-to-r from-saffron via-[#ffb066] to-india-green hover:from-saffron-dark hover:to-india-green-light text-white font-bold py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 relative overflow-hidden group"
               >
                 <span className="relative z-10 flex items-center justify-center text-lg">
                   I have paid ₹20
@@ -752,7 +740,7 @@ function App() {
 
               <button
                 onClick={() => setStep(2)}
-                className="inline-flex items-center justify-center text-gray-500 hover:text-gray-800 font-medium py-2 px-4 transition-colors w-max mx-auto group mt-2"
+                className="inline-flex items-center justify-center text-gray-500 hover:text-gray-800 font-medium py-2 px-4 transition-colors w-max mx-auto group text-sm"
               >
                 <svg className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"></path></svg>
                 Choose another method
